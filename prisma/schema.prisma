@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int        @id @default(autoincrement())
+  idvk     Int
+  name     String
+  lvl      Int        @default(1)
+  xp       Int        @default(0)
+  gold     Int        @default(350)
+  energy   Int        @default(0)
+  crdate   DateTime   @default(now())
+  update   DateTime   @default(now())
+  Offices  Office[]
+  Antiflud Antiflud[]
+}
+
+model Office {
+  id      Int       @id @default(autoincrement())
+  lvl     Int       @default(1)
+  xp      Int       @default(0)
+  limit   Int       @default(1)
+  id_user Int
+  user    User      @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Factory Factory[]
+}
+
+model Factory {
+  id         Int      @id @default(autoincrement())
+  lvl        Int      @default(1)
+  xp         Int      @default(0)
+  energy     Int      @default(0)
+  energy_per Int      @default(0)
+  boost      Int      @default(1)
+  limit      Int      @default(1)
+  id_office  Int
+  office     Office   @relation(fields: [id_office], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Worker     Worker[]
+}
+
+model Worker {
+  id         Int     @id @default(autoincrement())
+  strength   Int
+  speed      Int
+  agility    Int
+  stamina    Int
+  lvl        Int     @default(1)
+  xp         Int     @default(0)
+  point      Int
+  id_factory Int
+  factory    Factory @relation(fields: [id_factory], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Antiflud {
+  id           Int      @id @default(autoincrement())
+  id_user      Int      @unique
+  id_message   String
+  date_message DateTime
+  busy         Boolean
+  user         User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}

@@ -1,0 +1,62 @@
+-- CreateTable
+CREATE TABLE "User" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "idvk" INTEGER NOT NULL,
+    "name" TEXT NOT NULL DEFAULT 'zero',
+    "lvl" INTEGER NOT NULL DEFAULT 1,
+    "xp" INTEGER NOT NULL DEFAULT 0,
+    "gold" INTEGER NOT NULL DEFAULT 350,
+    "energy" INTEGER NOT NULL DEFAULT 0,
+    "crdate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "update" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Office" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "lvl" INTEGER NOT NULL DEFAULT 1,
+    "xp" INTEGER NOT NULL DEFAULT 0,
+    "limit" INTEGER NOT NULL DEFAULT 1,
+    "id_user" INTEGER NOT NULL,
+    CONSTRAINT "Office_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Factory" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "lvl" INTEGER NOT NULL DEFAULT 1,
+    "xp" INTEGER NOT NULL DEFAULT 0,
+    "energy" INTEGER NOT NULL DEFAULT 0,
+    "energy_per" INTEGER NOT NULL DEFAULT 0,
+    "boost" INTEGER NOT NULL DEFAULT 1,
+    "limit" INTEGER NOT NULL DEFAULT 1,
+    "id_office" INTEGER NOT NULL,
+    CONSTRAINT "Factory_id_office_fkey" FOREIGN KEY ("id_office") REFERENCES "Office" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Worker" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "strength" INTEGER NOT NULL,
+    "speed" INTEGER NOT NULL,
+    "agility" INTEGER NOT NULL,
+    "stamina" INTEGER NOT NULL,
+    "lvl" INTEGER NOT NULL DEFAULT 1,
+    "xp" INTEGER NOT NULL DEFAULT 0,
+    "point" INTEGER NOT NULL,
+    "id_factory" INTEGER NOT NULL,
+    CONSTRAINT "Worker_id_factory_fkey" FOREIGN KEY ("id_factory") REFERENCES "Factory" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Antiflud" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_user" INTEGER NOT NULL,
+    "id_message" TEXT NOT NULL,
+    "date_message" DATETIME NOT NULL,
+    "busy" BOOLEAN NOT NULL,
+    CONSTRAINT "Antiflud_id_user_fkey" FOREIGN KEY ("id_user") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Antiflud_id_user_key" ON "Antiflud"("id_user");
