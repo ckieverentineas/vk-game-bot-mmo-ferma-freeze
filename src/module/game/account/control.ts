@@ -22,8 +22,8 @@ export async function User_Menu_Show(context: Context, user: User) {
 
 export async function User_Info(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp}\n💰 Шекели: ${user.gold}\n⚡ Энергия: ${user.energy}`
-    keyboard.callbackButton({ label: 'Офис', payload: { command: 'user_add_stat', stat: "atk" }, color: 'secondary' })
+    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`
+    keyboard.callbackButton({ label: 'Офис', payload: { command: 'office', stat: "atk" }, color: 'secondary' })
     .callbackButton({ label: 'Фабрики', payload: { command: 'user_add_stat', stat: "health"  }, color: 'secondary' }).row()
     .callbackButton({ label: 'Рабочие', payload: { command: 'user_add_stat', stat: "mana" }, color: 'secondary' }).inline().oneTime()        
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })

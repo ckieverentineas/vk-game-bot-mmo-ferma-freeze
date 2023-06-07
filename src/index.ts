@@ -4,8 +4,11 @@ import QuestionManager, { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { User_Register } from "./module/game/account/tutorial";
 import { User_Info, User_Menu_Show } from "./module/game/account/control";
+import { Office, Office_Controller } from "./module/game/account/office";
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-export const token: string = String(process.env.token)
+export const token: string = process.env.token as string
 export const root: number = Number(process.env.root) //root user
 export const chat_id: number = Number(process.env.chat_id) //chat for logs
 export const group_id: number = Number(process.env.group_id)//clear chat group
@@ -59,9 +62,11 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	}
 	//await Sleep(4000)
 	
-	console.log(`${context.eventPayload.command} > ${user.id_region}`)
+	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
 	const config: any = {
-		"user_info": User_Info, //управление порталами
+		"user_info": User_Info,
+		"office": Office,
+		"office_controller": Office_Controller
 	}
 	try {
 		await config[context.eventPayload.command](context, user)
