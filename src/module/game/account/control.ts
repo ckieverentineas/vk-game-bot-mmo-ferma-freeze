@@ -10,7 +10,7 @@ export async function User_Menu_Show(context: Context, user: User) {
 		await context.send(`⌛ Погода сегодня солнечная, но вы теперь не на заводе, владете заводом.`,
 			{ 	
 				keyboard: Keyboard.builder()
-				.callbackButton({ label: 'Посмотреть бизнес', payload: { command: 'user_info', security: `${user.idvk}${user.name}` }, color: 'positive' }).oneTime().inline()
+				.callbackButton({ label: 'Посмотреть бизнес', payload: { command: 'main_menu', security: `${user.idvk}${user.name}` }, color: 'positive' }).oneTime().inline()
 			}
 		);
 		await prisma.antiflud.upsert({ create: { id_user: user.id, id_message: '0', date_message: new Date(), busy: false}, update: { id_message: '0', date_message: new Date(), busy: false}, where: { id_user: user.id} })
@@ -20,11 +20,12 @@ export async function User_Menu_Show(context: Context, user: User) {
 	}
 }
 
-export async function User_Info(context: Context, user: User) {
+export async function Main_Menu(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`
-    keyboard.callbackButton({ label: 'Офис', payload: { command: 'office', stat: "atk" }, color: 'secondary' })
-    .callbackButton({ label: 'Фабрики', payload: { command: 'user_add_stat', stat: "health"  }, color: 'secondary' }).row()
-    .callbackButton({ label: 'Рабочие', payload: { command: 'user_add_stat', stat: "mana" }, color: 'secondary' }).inline().oneTime()        
+    keyboard.callbackButton({ label: 'Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
+    .callbackButton({ label: 'Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
+	.callbackButton({ label: 'Строительство', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' })
+    .callbackButton({ label: '❌', payload: { command: 'close', stat: "mana" }, color: 'secondary' }).inline().oneTime()        
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }

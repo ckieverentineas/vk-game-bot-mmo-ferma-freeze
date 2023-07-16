@@ -8,52 +8,53 @@ datasource db {
 }
 
 model User {
-  id       Int        @id @default(autoincrement())
-  idvk     Int
-  name     String
-  lvl      Int        @default(1)
-  xp       Float        @default(0)
-  gold     Float        @default(350)
-  energy   Float        @default(0)
-  crdate   DateTime   @default(now())
-  update   DateTime   @default(now())
-  Offices  Office[]
-  Antiflud Antiflud[]
-}
-
-model Office {
-  id      Int       @id @default(autoincrement())
-  lvl     Int       @default(1)
-  xp      Float       @default(0)
-  id_user Int
-  user    User      @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  Factory Factory[]
-}
-
-model Factory {
-  id         Int      @id @default(autoincrement())
-  lvl        Int      @default(1)
+  id         Int        @id @default(autoincrement())
+  idvk       Int
+  name       String
+  lvl        Int        @default(1)
   xp         Float      @default(0)
+  gold       Float      @default(350)
   energy     Float      @default(0)
-  energy_per Float      @default(0)
-  boost      Float      @default(1)
-  limit      Int      @default(1)
-  id_office  Int
-  office     Office   @relation(fields: [id_office], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reputation Float      @default(0)
+  crdate     DateTime   @default(now())
+  update     DateTime   @default(now())
+  Antiflud   Antiflud[]
+  Bulder     Builder[]
   Worker     Worker[]
 }
 
+model Builder {
+  id      Int      @id @default(autoincrement())
+  name    String
+  lvl     Int      @default(1)
+  xp      Float    @default(0)
+  income  Float    @default(1)
+  worker  Int      @default(1)
+  count   Int      @default(1)
+  id_user Int
+  crdate  DateTime @default(now())
+  update  DateTime @default(now())
+  user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Worker  Worker[]
+}
+
 model Worker {
-  id         Int     @id @default(autoincrement())
-  strength   Int
-  speed      Int
-  agility    Int
-  stamina    Int
-  lvl        Int     @default(1)
-  xp         Float     @default(0)
+  id         Int      @id @default(autoincrement())
+  name       String
+  lvl        Int      @default(1)
+  xp         Float    @default(0)
+  income     Float    @default(0)
+  speed      Float    @default(1)
+  salary     Float    @default(1)
+  gold       Float    @default(0)
+  reputation Float    @default(0)
   point      Int
-  id_factory Int
-  factory    Factory @relation(fields: [id_factory], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id_user    Int
+  id_builder Int @default(0)
+  crdate     DateTime @default(now())
+  update     DateTime @default(now())
+  user       User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  builder    Builder  @relation(fields: [id_builder], references: [id])
 }
 
 model Antiflud {

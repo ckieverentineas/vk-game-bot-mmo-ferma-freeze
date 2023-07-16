@@ -3,8 +3,8 @@ import { Context, VK } from "vk-io";
 import QuestionManager, { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { User_Register } from "./module/game/account/tutorial";
-import { User_Info, User_Menu_Show } from "./module/game/account/control";
-import { Office, Office_Controller } from "./module/game/account/office";
+import { Main_Menu, User_Menu_Show } from "./module/game/account/control";
+import { Builder_Control, Builder_Controller } from "./module/game/account/builder";
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -64,9 +64,10 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
 	const config: any = {
-		"user_info": User_Info,
-		"office": Office,
-		"office_controller": Office_Controller
+		"main_menu": Main_Menu,
+		"builder_control": Builder_Control,
+		"builder_controller": Builder_Controller,
+		//"worker_control": Worker_Control,
 	}
 	try {
 		await config[context.eventPayload.command](context, user)
