@@ -35,7 +35,6 @@ model Builder {
   crdate  DateTime @default(now())
   update  DateTime @default(now())
   user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  Worker  Worker[]
 }
 
 model Worker {
@@ -48,13 +47,12 @@ model Worker {
   salary     Float    @default(1)
   gold       Float    @default(0)
   reputation Float    @default(0)
-  point      Int
+  point      Int      @default(0)
   id_user    Int
-  id_builder Int @default(0)
+  id_builder Int?
   crdate     DateTime @default(now())
   update     DateTime @default(now())
   user       User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  builder    Builder  @relation(fields: [id_builder], references: [id])
 }
 
 model Antiflud {

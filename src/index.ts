@@ -6,6 +6,7 @@ import { User_Register } from "./module/game/account/tutorial";
 import { Main_Menu, User_Menu_Show } from "./module/game/account/control";
 import { Builder_Control, Builder_Controller } from "./module/game/account/builder";
 import * as dotenv from 'dotenv';
+import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -67,7 +68,8 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"main_menu": Main_Menu,
 		"builder_control": Builder_Control,
 		"builder_controller": Builder_Controller,
-		//"worker_control": Worker_Control,
+		"worker_control": Worker_Control,
+		"worker_controller": Worker_Controller,
 	}
 	try {
 		await config[context.eventPayload.command](context, user)
