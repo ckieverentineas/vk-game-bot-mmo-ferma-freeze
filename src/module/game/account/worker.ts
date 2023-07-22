@@ -5,18 +5,30 @@ import prisma from "../../prisma";
 import Generator_Nickname from "../../fab/generator_name";
 import { Rand_Int } from "../../fab/random";
 
+function Finder_Builder(builder_list: Builder[], worker: Worker) {
+    for (let i=0; i < builder_list.length; i++) {
+        if (worker.id_builder == builder_list[i].id) {
+            
+            return builder_list[i]
+        }
+    }
+    return null
+}
 export async function Worker_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     const worker_list: Worker[] = await prisma.worker.findMany({ where: { id_user: user.id } })
+    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
     let event_logger = ``
     let i = context.eventPayload.office_current ?? 0
     if (worker_list.length > 0) {
-        event_logger += worker_list.map(worker => {
+        event_logger += worker_list.map((worker: Worker) => {
+            let builder: Builder | null = Finder_Builder(builder_list, worker)
             keyboard.callbackButton({ label: `💬 ${worker.name}-${worker.id}`, payload: { command: 'worker_control' }, color: 'secondary' })
             .callbackButton({ label: '🔧', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: i, target: worker.id  }, color: 'secondary' })
             .callbackButton({ label: '🔥', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: i, target: worker.id }, color: 'secondary' })
-            .callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()
-            return `💬 ${worker.name}-${worker.id}\n📈 ${worker.lvl}\n📗 ${worker.xp.toFixed(2)}\n⚡ ${worker.income.toFixed(2)}\n🧭 ${worker.speed.toFixed(2)}\n🤑 ${worker.salary.toFixed(2)}\n💰 ${worker.gold.toFixed(2)}\n🤝 ${worker.reputation.toFixed(2)}\n⭐ ${worker.point.toFixed(2)}\n`;
+            .callbackButton({ label: '👣', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: i, target: worker.id }, color: 'secondary' }).row()
+            //.callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()
+            return `💬 Имя: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(2)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point.toFixed(2)}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n`;
         }).join('\n');
     } else {
         event_logger = `💬 Вы еще не наняли рабочих, как насчет кого-то нанять?`
@@ -45,6 +57,7 @@ export async function Worker_Controller(context: Context, user: User) {
     const config: Office_Controller = {
         'worker_add': Worker_Add,
         'worker_upgrade': Worker_Upgrade, 
+        'worker_target': Worker_Target,
         'worker_config': Worker_Config,
         'worker_destroy': Worker_Destroy,
         'worker_open': Worker_Open
@@ -54,6 +67,40 @@ export async function Worker_Controller(context: Context, user: User) {
 
 type Office_Controller = {
     [key: string]: (context: Context, user: User, target: number) => Promise<void>;
+}
+
+async function Worker_Target(context: Context, user: User, target: number) {
+    //let attached = await Image_Random(context, "beer")
+    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
+    const keyboard = new KeyboardBuilder()
+    let event_logger = `Выберите новое место работы для вашего работника: \n\n`
+    if (context.eventPayload.selector) {
+        await prisma.$transaction([
+            prisma.worker.update({ where: { id: target }, data: { id_builder: context.eventPayload.selector } }),
+            prisma.builder.findFirst({ where: { id: context.eventPayload.selector }})
+        ]).then(([worker_upd, builder]) => {
+            event_logger = `⌛ Рабочий ${worker_upd.name}-${worker_upd.id} теперь работает в здании ${builder?.name}-${builder?.id}.\n` 
+            console.log(`⌛ Рабочий игрока ${user.idvk} ${worker_upd.name}-${worker_upd.id} теперь работает в здании ${builder?.name}-${builder?.id}.`);
+        })
+        .catch((error) => {
+            event_logger = `⌛ Произошла ошибка изменения места работы для работника, попробуйте позже` 
+            console.error(`Ошибка: ${error.message}`);
+        });
+    } else {
+        if (builder_list.length > 0) {
+            event_logger += builder_list.map((builder: Builder) => {
+                keyboard.callbackButton({ label: `💬 ${builder.name}-${builder.id}`, payload: { command: 'worker_control' }, color: 'secondary' })
+                .callbackButton({ label: '✅', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: builder.id }, color: 'secondary' }).row()
+                return `💬 Имя: ${builder.name}-${builder.id}\n`;
+            }).join('\n');
+        } else {
+            event_logger = `В данный момент нет доступных целей...`
+        }
+        
+    }
+
+    keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: target }, color: 'secondary' }).inline().oneTime() 
+    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Worker_Add(context: Context, user: User, target: number) {
