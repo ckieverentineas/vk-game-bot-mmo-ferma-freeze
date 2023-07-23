@@ -25,7 +25,7 @@ export async function Main_Menu(context: Context, user: User) {
     let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`
     keyboard.callbackButton({ label: 'Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
     .callbackButton({ label: 'Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
-	.callbackButton({ label: 'Строительство', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' })
+	.callbackButton({ label: 'Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
     .callbackButton({ label: '❌', payload: { command: 'close', stat: "mana" }, color: 'secondary' }).inline().oneTime()        
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
