@@ -31,37 +31,20 @@ vk.updates.on('message_new', async (context: Context, next: any) => {
 	if (context.peerType == 'chat') { 
 		return await next();
 	}
-	//проверяем есть ли пользователь в базах данных
-	const user_check = await prisma.user.findFirst({ where: { idvk: context.senderId } })
-	//если пользователя нет, то начинаем регистрацию
-	if (!user_check) {
-		await User_Register(context)
-	} else {
-		await User_Menu_Show(context, user_check)
+	if ((typeof context.text === 'string' || context.text instanceof String) && context.text.toLowerCase() == 'начать') {
+		//проверяем есть ли пользователь в базах данных
+		const user_check = await prisma.user.findFirst({ where: { idvk: context.senderId } })
+		//если пользователя нет, то начинаем регистрацию
+		if (!user_check) {
+			await User_Register(context)
+		} else {
+			await User_Menu_Show(context, user_check)
+		}
 	}
 	return await next();
 })
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
-	const security = context.eventPayload?.security || null
-	if (security == `${user.idvk}${user.name}`) {
-		await prisma.antiflud.update({ where: { id_user: user.id }, data: { id_message: String(context.conversationMessageId), busy: true }})
-	} else {
-		const security = await prisma.antiflud.findFirst({ where: { id_user: user.id } })
-		if (context.conversationMessageId != security?.id_message) {
-			await vk.api.messages.sendMessageEventAnswer({ event_id: context.eventId, user_id: context.userId, peer_id: context.peerId, event_data: JSON.stringify({ type: "show_snackbar", text: `🔔 Внимание, клавиатура устарела, получите новую!` }) })  
-			return
-		}
-		if (security?.busy) {
-			await vk.api.messages.sendMessageEventAnswer({ event_id: context.eventId, user_id: context.userId, peer_id: context.peerId, event_data: JSON.stringify({ type: "show_snackbar", text: `🔔 Внимание, мы вычисляем, имейте терпение!` }) })  
-			return
-		} else {
-			await prisma.antiflud.update({ where: { id_user: user.id }, data: { busy: true }})
-		}
-		/*if (security?.date_message && new Date(security.date_message) >= 86400000) {
-
-		}*/
-	}
 	//await Sleep(4000)
 	
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
@@ -77,10 +60,8 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	try {
 		await config[context.eventPayload.command](context, user)
 	} catch (e) {
-		await prisma.antiflud.update({ where: { id_user: user.id }, data: { busy: false }})
 		console.log(`Ошибка события ${e}`)
 	}
-	await prisma.antiflud.update({ where: { id_user: user.id }, data: { busy: false }})
 	return await next();
 })
 

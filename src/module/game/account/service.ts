@@ -1,4 +1,4 @@
-import { User, Builder, Trigger } from "@prisma/client"
+import { User, Builder, Trigger, Analyzer } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
@@ -26,9 +26,12 @@ export async function Income_Control(context: Context, user: User) {
         }
         const dateold: Date = new Date(trigger.update)
         const koef: number = (Number(datenow) - Number(dateold))/3600000
+        let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
+        if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
         await prisma.$transaction([
             prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } }),
-            prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income*koef } } })
+            prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income*koef } } }),
+            prisma.analyzer.update({ where: { id: analyzer.id }, data: { energy: { increment: income*koef } } })
         ]).then(([, user_income]) => {
             event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила ${(income*koef).toFixed(2)}⚡\n На вашем счете было ${user.energy.toFixed(2)}, новый баланс: ${user_income.energy.toFixed(2)}` 
             console.log(`⌛ Работники ${user.idvk} предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила ${(income*koef).toFixed(2)}\n На вашем счете было ${user.energy.toFixed(2)}, новый баланс: ${user_income.energy.toFixed(2)}`);
@@ -66,8 +69,11 @@ export async function Exchange_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     let event_logger = 'Для обмена энергии на шекели нужно минимум 10 энергии'
     if (user.energy >= 10) {
+        let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
+        if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
         await prisma.$transaction([
-            prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: user.energy }, gold: { increment: user.energy/10 } } })
+            prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: user.energy }, gold: { increment: user.energy/10 } } }),
+            prisma.analyzer.update({ where: { id: analyzer.id }, data: { gold: { increment: user.energy/10 } } })
         ]).then(([user_up]) => {
             event_logger = `⌛ На бирже вы обменяли ${user.energy.toFixed(2)}⚡ на ${(user.energy/10).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}` 
             console.log(`⌛ На бирже ${user.idvk} обменял ${user.energy.toFixed(2)}⚡ на ${(user.gold/10).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}`);

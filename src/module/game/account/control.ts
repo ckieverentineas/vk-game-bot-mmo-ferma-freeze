@@ -1,23 +1,14 @@
 import { User } from "@prisma/client";
 import { vk } from "../../../";
-import prisma from "../../prisma";
 import { Context, Keyboard, KeyboardBuilder } from "vk-io";
 
 export async function User_Menu_Show(context: Context, user: User) {
-    const datenow: any = new Date()
-	const dateold: any = user.update
-	if (datenow - dateold > 1000) {
-		await context.send(`⌛ Погода сегодня солнечная, но вы теперь не на заводе, владете заводом.`,
-			{ 	
-				keyboard: Keyboard.builder()
-				.callbackButton({ label: 'Посмотреть бизнес', payload: { command: 'main_menu', security: `${user.idvk}${user.name}` }, color: 'positive' }).oneTime().inline()
-			}
-		);
-		await prisma.antiflud.upsert({ create: { id_user: user.id, id_message: '0', date_message: new Date(), busy: false}, update: { id_message: '0', date_message: new Date(), busy: false}, where: { id_user: user.id} })
-		await prisma.user.update({ where: { id: user.id}, data: { update: datenow } })
-	} else {
-		await context.send(`🔔 Вы уже получали клавиатуру в: ${dateold.getDate()}-${dateold.getMonth()}-${dateold.getFullYear()} ${dateold.getHours()}:${dateold.getMinutes()}!\nПриходите через ${((86400000-(datenow-dateold))/60000/60).toFixed(2)} часов.`)
-	}
+	await context.send(`⌛ Погода сегодня солнечная, но вы теперь не на заводе, владете заводом.`,
+		{ 	
+			keyboard: Keyboard.builder()
+			.callbackButton({ label: 'Посмотреть бизнес', payload: { command: 'main_menu', security: `${user.idvk}${user.name}` }, color: 'positive' }).oneTime().inline()
+		}
+	);
 }
 
 export async function Main_Menu(context: Context, user: User) {

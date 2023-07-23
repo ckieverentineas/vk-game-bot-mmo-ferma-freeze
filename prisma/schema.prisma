@@ -18,10 +18,10 @@ model User {
   reputation Float      @default(0)
   crdate     DateTime   @default(now())
   update     DateTime   @default(now())
-  Antiflud   Antiflud[]
   Bulder     Builder[]
   Worker     Worker[]
   Trigger    Trigger[]
+  Analyzer   Analyzer[]
 }
 
 model Builder {
@@ -66,11 +66,13 @@ model Trigger {
   update  DateTime @default(now())
 }
 
-model Antiflud {
-  id           Int      @id @default(autoincrement())
-  id_user      Int      @unique
-  id_message   String
-  date_message DateTime
-  busy         Boolean
-  user         User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+model Analyzer {
+  id      Int      @id @default(autoincrement())
+  energy  Float      @default(0)
+  gold    Float      @default(0)
+  xp      Float      @default(0)
+  point   Int      @default(0)
+  user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id_user Int
+  crdate  DateTime @default(now())
 }
