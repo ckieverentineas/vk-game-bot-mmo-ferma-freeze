@@ -25,10 +25,10 @@ export async function Worker_Control(context: Context, user: User) {
             let builder: Builder | null = Finder_Builder(builder_list, worker)
             keyboard.callbackButton({ label: `💬 ${worker.name}-${worker.id}`, payload: { command: 'worker_control' }, color: 'secondary' })
             .callbackButton({ label: '🔧', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: i, target: worker.id  }, color: 'secondary' })
-            .callbackButton({ label: '🔥', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: i, target: worker.id }, color: 'secondary' })
-            .callbackButton({ label: '👣', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: i, target: worker.id }, color: 'secondary' }).row()
+            .callbackButton({ label: '👣', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: i, target: worker.id }, color: 'secondary' })
+            .callbackButton({ label: '🔥', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: i, target: worker.id }, color: 'secondary' }).row()
             //.callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()
-            return `💬 Имя: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(2)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point.toFixed(2)}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n`;
+            return `💬 Работник: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(2)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n`;
         }).join('\n');
     } else {
         event_logger = `💬 Вы еще не наняли рабочих, как насчет кого-то нанять?`
@@ -133,11 +133,11 @@ async function Worker_Upgrade(context: Context, user: User, target: number) {
     if (worker && worker.point > 0) {
         const selector = await Rand_Int(2)
 
-        const speed_new = selector == 0 ? 0.1 : 0
+        const speed_new = selector == 0 ? 0.01 : 0
         const income_new = selector == 1 ? 0.1 : 0
         await prisma.$transaction([
-            prisma.worker.update({ where: { id: worker.id }, data: { income: { increment: income_new }, speed: { increment: speed_new } } }),
-            prisma.user.update({ where: { id: user.id }, data: { xp: Math.random() } })
+            prisma.worker.update({ where: { id: worker.id }, data: { income: { increment: income_new }, speed: { increment: speed_new }, point: { decrement: 1 } } }),
+            prisma.user.update({ where: { id: user.id }, data: { xp: { increment: Math.random() } } })
         ]).then(([worker_up, user_up]) => {
             event_logger = `⌛ Поздравляем с улучшением рабочего ${worker_up.name}-${worker_up.id}, ${selector == 0 ? `скорость повышена с ${worker.speed} до ${worker_up.speed}` : `прибыль повышена с ${worker.income} до ${worker_up.income}`}.\n🏦 Ваш опыт вырос с ${user.xp.toFixed(2)} до ${user_up.xp.toFixed(2)}` 
             console.log(`⌛ Поздравляем ${user.idvk} с улучшением рабочего ${worker_up.name}-${worker_up.id}, ${selector == 0 ? `скорость повышена с ${worker.speed} до ${worker_up.speed}` : `прибыль повышена с ${worker.income} до ${worker_up.income}`}.\n🏦 Его/ее опыт вырос с ${user.xp.toFixed(2)} до ${user_up.xp.toFixed(2)}`);

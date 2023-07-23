@@ -26,6 +26,7 @@ export async function Main_Menu(context: Context, user: User) {
     keyboard.callbackButton({ label: 'Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
     .callbackButton({ label: 'Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
 	.callbackButton({ label: 'Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
+	.callbackButton({ label: 'Биржа', payload: { command: 'exchange_control', stat: "health"  }, color: 'secondary' })
     .callbackButton({ label: '❌', payload: { command: 'close', stat: "mana" }, color: 'secondary' }).inline().oneTime()        
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
