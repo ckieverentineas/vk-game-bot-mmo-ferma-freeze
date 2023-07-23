@@ -14,4 +14,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             })
         }
     })
+    /*hearManager.hear(/стата/, async (context: any) => {
+        await context.send()
+    })*/
 }
