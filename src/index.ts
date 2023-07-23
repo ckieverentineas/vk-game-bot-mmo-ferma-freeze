@@ -8,6 +8,7 @@ import { Builder_Control, Builder_Controller } from "./module/game/account/build
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
 import { Exchange_Control, Income_Control } from "./module/game/account/service";
+import { registerUserRoutes } from "./player";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -25,6 +26,7 @@ const hearManager = new HearManager<IQuestionMessageContext>();
 vk.updates.use(questionManager.middleware);
 vk.updates.on('message_new', hearManager.middleware);
 //регистрация роутов из других классов
+registerUserRoutes(hearManager)
 
 vk.updates.on('message_new', async (context: Context, next: any) => {
     console.log(`User:${context.senderId} sent ${context.text} from ${context.peerType}`)
