@@ -99,6 +99,8 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
                 event_logger = `⌛ Произошла ошибка прокачки здания, попробуйте позже` 
                 console.error(`Ошибка: ${error.message}`);
             });
+        } else {
+            event_logger += `\n На вашем банковском счете недостает ${(price_new-user.gold).toFixed(2)} шекелей.`
         }
     }
     //назад хз куда
@@ -109,20 +111,25 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
 async function Builder_Destroy(context: Context, user: User, target: number) {
     const keyboard = new KeyboardBuilder()
     const builder: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id: target }})
-    let event_logger = `В данный момент нечего продать...`
+    let event_logger = `В данный момент нельзя снести здания...`
     if (builder) {
-        const price_return = 37.7385*(2.6158**builder.lvl)
-        await prisma.$transaction([
-            prisma.builder.delete({ where: { id: builder.id } }),
-            prisma.user.update({ where: { id: user.id }, data: { gold: { increment: price_return } } })
-        ]).then(([builder_del, user_return]) => {
-            event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На вашем счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰` 
-            console.log(`⌛ Поздравляем ${user.idvk} с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На его/ее счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰`);
-        })
-        .catch((error) => {
-            event_logger = `⌛ Произошла ошибка разрушения здания, попробуйте позже` 
-            console.error(`Ошибка: ${error.message}`);
-        });
+        if (context.eventPayload.status == "ok") {
+            const price_return = 37.7385*(2.6158**builder.lvl)
+            await prisma.$transaction([
+                prisma.builder.delete({ where: { id: builder.id } }),
+                prisma.user.update({ where: { id: user.id }, data: { gold: { increment: price_return } } })
+            ]).then(([builder_del, user_return]) => {
+                event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На вашем счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰` 
+                console.log(`⌛ Поздравляем ${user.idvk} с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На его/ее счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰`);
+            })
+            .catch((error) => {
+                event_logger = `⌛ Произошла ошибка разрушения здания, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        } else {
+            event_logger = `Вы уверены, что хотите снести ${builder.name}-${builder.id}?`
+            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: 0, target: builder.id, status: "ok" }, color: 'secondary' })
+        } 
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 

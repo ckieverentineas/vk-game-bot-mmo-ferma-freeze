@@ -147,6 +147,8 @@ async function Worker_Upgrade(context: Context, user: User, target: number) {
             event_logger = `⌛ Произошла ошибка прокачки рабочего, попробуйте позже` 
             console.error(`Ошибка: ${error.message}`);
         });
+    } else {
+        event_logger += `\n У рабочего ${worker?.name} не хватает очков обучения. Очки обучения начисляются раз в неделю каждому рабочему в процессе сбора Прибыли.`
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
@@ -158,22 +160,27 @@ async function Worker_Destroy(context: Context, user: User, target: number) {
     const worker: Worker | null = await prisma.worker.findFirst({ where: { id_user: user.id, id: target }})
     let event_logger = `В данный момент некого уволить...`
     if (worker) {
-        const worker_check: number = await prisma.worker.count({ where: { id_user: user.id }})
-        const price_return = (worker_check)*50 >= 500 ? 500 : (worker_check)*50
-        await prisma.$transaction([
-            prisma.worker.delete({ where: { id: worker.id } }),
-            prisma.user.update({ where: { id: user.id }, data: { gold: { increment: price_return } } })
-        ]).then(([worker_del, user_return]) => {
-            event_logger = `⌛ Поздравляем с увольнением работника ${worker_del.name}-${worker_del.id}.\n💳 На вашем счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰` 
-            console.log(`⌛ Поздравляем ${user.idvk} с увольнением работника ${worker_del.name}-${worker_del.id}.\n💳 На его/ее счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰`);
-        })
-        .catch((error) => {
-            event_logger = `⌛ Произошла ошибка увольнения работника, попробуйте позже` 
-            console.error(`Ошибка: ${error.message}`);
-        });
+        if (context.eventPayload.status == "ok") {
+            const worker_check: number = await prisma.worker.count({ where: { id_user: user.id }})
+            const price_return = (worker_check)*50 >= 500 ? 500 : (worker_check)*50
+            await prisma.$transaction([
+                prisma.worker.delete({ where: { id: worker.id } }),
+                prisma.user.update({ where: { id: user.id }, data: { gold: { increment: price_return } } })
+            ]).then(([worker_del, user_return]) => {
+                event_logger = `⌛ Поздравляем с увольнением работника ${worker_del.name}-${worker_del.id}.\n💳 На вашем счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰` 
+                console.log(`⌛ Поздравляем ${user.idvk} с увольнением работника ${worker_del.name}-${worker_del.id}.\n💳 На его/ее счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰`);
+            })
+            .catch((error) => {
+                event_logger = `⌛ Произошла ошибка увольнения работника, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        } else {
+            event_logger = `Вы уверены, что хотите уволить рабочего ${worker.name}-${worker.id}?`
+            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: 0, target: worker.id, status: "ok" }, color: 'secondary' })
+        } 
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
