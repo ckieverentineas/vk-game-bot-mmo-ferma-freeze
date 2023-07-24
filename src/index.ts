@@ -3,7 +3,7 @@ import { Context, VK } from "vk-io";
 import QuestionManager, { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { User_Register } from "./module/game/account/tutorial";
-import { Main_Menu, User_Menu_Show } from "./module/game/account/control";
+import { Main_Menu, Main_Menu_Close, User_Menu_Show } from "./module/game/account/control";
 import { Builder_Control, Builder_Controller } from "./module/game/account/builder";
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
@@ -33,7 +33,7 @@ vk.updates.on('message_new', async (context: Context, next: any) => {
 	if (context.peerType == 'chat') { 
 		return await next();
 	}
-	if ((typeof context.text === 'string' || context.text instanceof String) && context.text.toLowerCase() == 'начать') {
+	if ((typeof context.text === 'string' || context.text instanceof String) && (context.text.toLowerCase() == 'начать' || context.text.toLowerCase() == "клава")) {
 		//проверяем есть ли пользователь в базах данных
 		const user_check = await prisma.user.findFirst({ where: { idvk: context.senderId } })
 		//если пользователя нет, то начинаем регистрацию
@@ -52,6 +52,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
 	const config: any = {
 		"main_menu": Main_Menu,
+		"main_menu_close": Main_Menu_Close,
 		"builder_control": Builder_Control,
 		"builder_controller": Builder_Controller,
 		"worker_control": Worker_Control,
