@@ -10,9 +10,9 @@ export async function Builder_Control(context: Context, user: User) {
     let i = context.eventPayload.office_current ?? 0
     if (builder_list.length > 0) {
         event_logger += builder_list.map(builder => {
-            keyboard.callbackButton({ label: `💬 ${builder.name}-${builder.id}`, payload: { command: 'builder_control' }, color: 'secondary' })
-            .callbackButton({ label: '🔧', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: i, target: builder.id  }, color: 'secondary' })
-            .callbackButton({ label: '🔥', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: i, target: builder.id }, color: 'secondary' }).row()
+            keyboard.callbackButton({ label: `💬 ${builder.name}-${builder.id}`, payload: { command: 'builder_control' }, color: 'secondary' }).row()
+            .callbackButton({ label: 'Улучшить', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: i, target: builder.id  }, color: 'secondary' }).row()
+            .callbackButton({ label: 'Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: i, target: builder.id }, color: 'secondary' }).row()
             //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
             return `💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n⚡ Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n⚒ Количество: ${builder.count}\n`;
         }).join('\n');

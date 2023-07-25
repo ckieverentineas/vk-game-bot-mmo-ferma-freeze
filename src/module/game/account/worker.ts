@@ -23,10 +23,10 @@ export async function Worker_Control(context: Context, user: User) {
     if (worker_list.length > 0) {
         event_logger += worker_list.map((worker: Worker) => {
             let builder: Builder | null = Finder_Builder(builder_list, worker)
-            keyboard.callbackButton({ label: `💬 ${worker.name}-${worker.id}`, payload: { command: 'worker_control' }, color: 'secondary' })
-            .callbackButton({ label: '🔧', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: i, target: worker.id  }, color: 'secondary' })
-            .callbackButton({ label: '👣', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: i, target: worker.id }, color: 'secondary' })
-            .callbackButton({ label: '🔥', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: i, target: worker.id }, color: 'secondary' }).row()
+            keyboard.callbackButton({ label: `💬 ${worker.name}-${worker.id}`, payload: { command: 'worker_control' }, color: 'secondary' }).row()
+            .callbackButton({ label: 'Обучить', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: i, target: worker.id  }, color: 'secondary' }).row()
+            .callbackButton({ label: 'Работа', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: i, target: worker.id }, color: 'secondary' }).row()
+            .callbackButton({ label: 'Уволить', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: i, target: worker.id }, color: 'secondary' }).row()
             //.callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()
             return `💬 Работник: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(2)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n`;
         }).join('\n');

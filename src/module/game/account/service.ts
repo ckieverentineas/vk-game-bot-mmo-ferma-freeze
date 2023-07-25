@@ -68,15 +68,16 @@ export async function Income_Control(context: Context, user: User) {
 export async function Exchange_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     let event_logger = 'Для обмена энергии на шекели нужно минимум 10 энергии'
-    if (user.energy >= 10) {
+    const course = 2
+    if (user.energy >= course) {
         let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
         if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
         await prisma.$transaction([
-            prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: user.energy }, gold: { increment: user.energy/10 } } }),
-            prisma.analyzer.update({ where: { id: analyzer.id }, data: { gold: { increment: user.energy/10 } } })
+            prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: user.energy }, gold: { increment: user.energy/course } } }),
+            prisma.analyzer.update({ where: { id: analyzer.id }, data: { gold: { increment: user.energy/course } } })
         ]).then(([user_up]) => {
-            event_logger = `⌛ На бирже вы обменяли ${user.energy.toFixed(2)}⚡ на ${(user.energy/10).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}` 
-            console.log(`⌛ На бирже ${user.idvk} обменял ${user.energy.toFixed(2)}⚡ на ${(user.gold/10).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}`);
+            event_logger = `⌛ На бирже вы обменяли ${user.energy.toFixed(2)}⚡ на ${(user.energy/course).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}` 
+            console.log(`⌛ На бирже ${user.idvk} обменял ${user.energy.toFixed(2)}⚡ на ${(user.gold/course).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}`);
         })
         .catch((error) => {
             event_logger = `⌛ Произошла ошибка конвертации энергии в шекели, попробуйте позже` 
