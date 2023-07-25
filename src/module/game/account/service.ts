@@ -49,9 +49,12 @@ export async function Income_Control(context: Context, user: User) {
     const timer_week = 100000000
     const koef_week = Number(datenow) - Number(trigger_worker?.update)
     if (trigger_worker && koef_week >= timer_week ) {
+        let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
+        if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
         await prisma.$transaction([
             prisma.trigger.update({ where: { id: trigger_worker.id }, data: { update: datenow } }),
-            prisma.worker.updateMany({ where: { id_user: user.id }, data: { point: { increment: Math.floor(koef_week/timer_week) } } })
+            prisma.worker.updateMany({ where: { id_user: user.id }, data: { point: { increment: Math.floor(koef_week/timer_week) } } }),
+            prisma.analyzer.update({ where: { id: analyzer.id }, data: { point: { increment: Math.floor(koef_week/timer_week) } } })
         ]).then(() => {
             event_logger += `⌛ Работники получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения` 
             console.log(`⌛ Работники ${user.idvk} получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения`);

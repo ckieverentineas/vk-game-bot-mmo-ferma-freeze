@@ -15,7 +15,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             })
         }
     })
-    hearManager.hear(/стата/, async (context: any) => {
+    hearManager.hear(/стата|Стата/gm, async (context: any) => {
         let users = 'Рейтинг по добытой энергии\n\n'
         let counter = 1
         let user_me = null
@@ -50,5 +50,14 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         //console.log(res.map((item: { test: any; }) => {return item.test;}).join("\r\n"))*/
         users += user_me
         await context.send(`${users}.`)
+    })
+    hearManager.hear(/осмотреть|Осмотреть/gm, async (context: any) => {
+        if (context.forwards[0].senderId) {
+            const user = await prisma.user.findFirst({ where: { idvk: context.forwards[0].senderId } })
+            if (user) {
+                await context.send(`💬 Промышленный шпионаж показал, что это бизнес, ${user.name}:\n🌐 Корпорация: ${user.id_corportation == 0? 'Не в корпорации' : 'Корпа'}\n📈 Уровень: ${user.lvl}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`)
+            }
+        }
+        //console.log(context.forwards[0].senderId)
     })
 }
