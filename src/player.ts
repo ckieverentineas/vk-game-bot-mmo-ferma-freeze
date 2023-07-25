@@ -49,7 +49,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         await context.send(res.map((item: { test: any; }) => {return item.test;}).join("\r\n"))
         //console.log(res.map((item: { test: any; }) => {return item.test;}).join("\r\n"))*/
         users += user_me
-        await context.send(`${users}.`)
+        await context.send(`${users}`)
     })
     hearManager.hear(/осмотреть|Осмотреть/gm, async (context: any) => {
         if (context.forwards[0].senderId) {
