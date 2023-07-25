@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  id         Int        @id @default(autoincrement())
-  idvk       Int
-  name       String
-  lvl        Int        @default(1)
-  xp         Float      @default(0)
-  gold       Float      @default(350)
-  energy     Float      @default(0)
-  reputation Float      @default(0)
-  crdate     DateTime   @default(now())
-  update     DateTime   @default(now())
-  Bulder     Builder[]
-  Worker     Worker[]
-  Trigger    Trigger[]
-  Analyzer   Analyzer[]
+  id              Int        @id @default(autoincrement())
+  idvk            Int
+  name            String
+  lvl             Int        @default(1)
+  xp              Float      @default(0)
+  gold            Float      @default(350)
+  energy          Float      @default(0)
+  reputation      Float      @default(0)
+  id_corportation Int        @default(0)
+  crdate          DateTime   @default(now())
+  update          DateTime   @default(now())
+  Bulder          Builder[]
+  Worker          Worker[]
+  Trigger         Trigger[]
+  Analyzer        Analyzer[]
 }
 
 model Builder {
@@ -30,6 +31,7 @@ model Builder {
   lvl     Int      @default(1)
   xp      Float    @default(0)
   income  Float    @default(1)
+  cost    Float    @default(100)
   worker  Int      @default(1)
   count   Int      @default(1)
   id_user Int
@@ -68,9 +70,9 @@ model Trigger {
 
 model Analyzer {
   id      Int      @id @default(autoincrement())
-  energy  Float      @default(0)
-  gold    Float      @default(0)
-  xp      Float      @default(0)
+  energy  Float    @default(0)
+  gold    Float    @default(0)
+  xp      Float    @default(0)
   point   Int      @default(0)
   user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
   id_user Int

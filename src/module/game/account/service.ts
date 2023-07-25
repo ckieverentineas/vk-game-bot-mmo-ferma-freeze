@@ -46,15 +46,15 @@ export async function Income_Control(context: Context, user: User) {
         await prisma.trigger.create({ data: { id_user: user.id, name: 'worker', value: false } })
         console.log(`Init worker for user ${context.peerId}`)
     }
-    const timer_week = 1000000000
+    const timer_week = 100000000
     const koef_week = Number(datenow) - Number(trigger_worker?.update)
     if (trigger_worker && koef_week >= timer_week ) {
         await prisma.$transaction([
             prisma.trigger.update({ where: { id: trigger_worker.id }, data: { update: datenow } }),
             prisma.worker.updateMany({ where: { id_user: user.id }, data: { point: { increment: Math.floor(koef_week/timer_week) } } })
         ]).then(() => {
-            event_logger += `⌛ Работники получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} недель, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения` 
-            console.log(`⌛ Работники ${user.idvk} получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} недель, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения`);
+            event_logger += `⌛ Работники получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения` 
+            console.log(`⌛ Работники ${user.idvk} получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения`);
         })
         .catch((error) => {
             event_logger += `⌛ Произошла ошибка прокачки рабочих, попробуйте позже` 

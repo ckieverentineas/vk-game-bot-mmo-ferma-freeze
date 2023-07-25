@@ -45,6 +45,24 @@ vk.updates.on('message_new', async (context: Context, next: any) => {
 	}
 	return await next();
 })
+vk.updates.on('like_add', async (context: Context, next: any) => {
+	//проверяем есть ли пользователь в базах данных
+	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
+	if (user_check) {
+		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { energy: { increment: 5 } } })
+		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Вам начислено вознаграждение за лайк ${context.objectType} 5⚡. Ваш баланс ${user_gift.energy}` })
+	}
+	return await next();
+})
+vk.updates.on('like_remove', async (context: Context, next: any) => {
+	//проверяем есть ли пользователь в базах данных
+	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
+	if (user_check) {
+		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { energy: { decrement: 5 } } })
+		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Штраф за снятие лайка с ${context.objectType} 5⚡. Ваш баланс ${user_gift.energy}` })
+	}
+	return await next();
+})
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
 	//await Sleep(4000)

@@ -14,7 +14,7 @@ export async function Builder_Control(context: Context, user: User) {
             .callbackButton({ label: 'Улучшить', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: i, target: builder.id  }, color: 'secondary' }).row()
             .callbackButton({ label: 'Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: i, target: builder.id }, color: 'secondary' }).row()
             //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
-            return `💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n⚡ Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n⚒ Количество: ${builder.count}\n`;
+            return `💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n💰 Вложено: ${builder.cost.toFixed(2)}\n⚡ Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n⚒ Количество: ${builder.count}\n`;
         }).join('\n');
     } else {
         event_logger = `💬 Вы еще не зарегистрировали офис, как насчет открыть свое дело впервые?`
@@ -84,11 +84,11 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
     if (builder) {
         const lvl_new = builder.lvl+1
         const price_new = 37.7385*(2.6158**lvl_new)
-        const worker_new = lvl_new
+        const worker_new = lvl_new/2 >= 1 ? Math.floor(lvl_new/2) : 1
         const income_new = 0.7500*lvl_new**3-3.0357*lvl_new**2+7.2143*lvl_new-3.8000
         if (user.gold >= price_new) {
             await prisma.$transaction([
-                prisma.builder.update({ where: { id: builder.id }, data: { lvl: lvl_new, worker: worker_new, income: income_new } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { lvl: lvl_new, worker: worker_new, income: income_new, cost: { increment: price_new } } }),
                 prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: price_new } } })
             ]).then(([builder_up, user_up]) => {
                 event_logger = `⌛ Поздравляем с улучшением уровня здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n🏦 На вашем счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_up.gold.toFixed(2)}` 

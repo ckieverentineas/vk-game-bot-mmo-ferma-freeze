@@ -13,7 +13,7 @@ export async function User_Menu_Show(context: Context, user: User) {
 
 export async function Main_Menu(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`
+    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corportation == 0? 'Не в корпорации' : 'Корпа'}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`
     keyboard.callbackButton({ label: 'Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
     .callbackButton({ label: 'Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
 	.callbackButton({ label: 'Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
