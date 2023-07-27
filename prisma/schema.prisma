@@ -72,6 +72,8 @@ model Analyzer {
   id      Int      @id @default(autoincrement())
   energy  Float    @default(0)
   gold    Float    @default(0)
+  gold_from Float @default(0)
+  gold_to Float @default(0)
   xp      Float    @default(0)
   point   Int      @default(0)
   user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)

@@ -70,8 +70,9 @@ export async function Income_Control(context: Context, user: User) {
 
 export async function Exchange_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    let event_logger = 'Для обмена энергии на шекели нужно минимум 10 энергии'
     const course = 2
+    let event_logger = `Для обмена энергии на шекели нужно минимум ${course} энергии`
+    
     if (user.energy >= course) {
         let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
         if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }

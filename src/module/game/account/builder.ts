@@ -83,9 +83,9 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
     let event_logger = `В данный момент здание нельзя улучшить...`
     if (builder) {
         const lvl_new = builder.lvl+1
-        const price_new = 37.7385*(2.6158**lvl_new)
+        const price_new = 102.5616*(lvl_new**1.3838)
         const worker_new = lvl_new/2 >= 1 ? Math.floor(lvl_new/2) : 1
-        const income_new = 0.7500*lvl_new**3-3.0357*lvl_new**2+7.2143*lvl_new-3.8000
+        const income_new = 5*(lvl_new**1.5)
         if (user.gold >= price_new) {
             await prisma.$transaction([
                 prisma.builder.update({ where: { id: builder.id }, data: { lvl: lvl_new, worker: worker_new, income: income_new, cost: { increment: price_new } } }),
