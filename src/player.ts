@@ -1,5 +1,5 @@
 import { HearManager } from "@vk-io/hear";
-import { root, vk } from "./index";
+import { chat_id, root, vk } from "./index";
 import { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { Analyzer, User } from "@prisma/client";
@@ -100,6 +100,42 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 });
             } else {
                 await context.send(`Ошибка в команде, комилятор влом писать`)
+            }
+        }
+    })
+    hearManager.hear(/!бан/, async (context) => {
+        if (context.isOutbox == false && root.includes(String(context.senderId)) && context.text) {
+            const target: number = Number(context.text.replace(/[^0-9]/g,"")) || 0
+            if (target > 0) {
+                const user: User | null = await prisma.user.findFirst({ where: { idvk: target } })
+                if (user) {
+                    const login = await prisma.user.update({ where: { id: user.id }, data: { status: "banned" } })
+                    await context.send(`OK`)
+                    vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `☠ Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`})
+                    vk.api.messages.send({ peer_id: login.idvk, random_id: 0, message: `☠ @id${login.idvk}(${login.name}) учетная запись приостановлена! Обращайтесь в тех поддержку: https://vk.com/fermatex`})
+                    console.log(`Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`)
+                } else {
+                    await context.send(`@id${target}(Пользователя) не существует`)
+                    console.log(`@id${target}(Пользователя) не существует`)
+                }
+            }
+        }
+    })
+    hearManager.hear(/!разбан/, async (context) => {
+        if (context.isOutbox == false && root.includes(String(context.senderId)) && context.text) {
+            const target: number = Number(context.text.replace(/[^0-9]/g,"")) || 0
+            if (target > 0) {
+                const user: User | null = await prisma.user.findFirst({ where: { idvk: target } })
+                if (user) {
+                    const login = await prisma.user.update({ where: { id: user.id }, data: { status: "player" } })
+                    await context.send(`OK`)
+                    vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `✅ Для @id${login.idvk}(${login.name}) учетная запись возобновлена!`})
+                    vk.api.messages.send({ peer_id: login.idvk, random_id: 0, message: `✅ @id${login.idvk}(${login.name}) учетная запись возобновлена!`})
+                    console.log(`Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`)
+                } else {
+                    await context.send(`@id${target}(Пользователя) не существует`)
+                    console.log(`@id${target}(Пользователя) не существует`)
+                }
             }
         }
     })

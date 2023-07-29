@@ -16,6 +16,7 @@ model User {
   gold            Float      @default(350)
   energy          Float      @default(0)
   reputation      Float      @default(0)
+  status          String     @default("player")
   id_corportation Int        @default(0)
   crdate          DateTime   @default(now())
   update          DateTime   @default(now())

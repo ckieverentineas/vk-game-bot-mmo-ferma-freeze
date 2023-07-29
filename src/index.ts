@@ -40,6 +40,7 @@ vk.updates.on('message_new', async (context: Context, next: any) => {
 		if (!user_check) {
 			await User_Register(context)
 		} else {
+			if (user_check.status == "banned") { return await next() }
 			await User_Menu_Show(context, user_check)
 		}
 	}
@@ -50,7 +51,7 @@ vk.updates.on('like_add', async (context: Context, next: any) => {
 	const whitelist = ['post'/*, 'comment' */]
 	if ( !whitelist.includes(context.objectType) ) { return await next() }
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
-	console.log(context)
+	//console.log(context)
 	if (user_check ) {
 		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { gold: { increment: 100 } } })
 		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Вам начислено вознаграждение за лайк ${context.objectType} 100💰. Ваш баланс ${user_gift.gold.toFixed(2)}` })
@@ -59,7 +60,7 @@ vk.updates.on('like_add', async (context: Context, next: any) => {
 })
 vk.updates.on('like_remove', async (context: Context, next: any) => {
 	//проверяем есть ли пользователь в базах данных
-	const whitelist = ['post', 'comment']
+	const whitelist = ['post'/*, 'comment' */]
 	if ( !whitelist.includes(context.objectType) ) { return await next() }
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
 	if (user_check) {
@@ -98,6 +99,7 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 })*/
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
+	if (user.status == "banned") { return await next() }
 	//await Sleep(4000)
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
 	const config: any = {
