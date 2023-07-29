@@ -3,6 +3,12 @@ import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
 
+export function Sleep(ms: number) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
+
 export async function Income_Control(context: Context, user: User) {
     const builders: Builder[] | null = await prisma.builder.findMany({ where: { id_user: user.id } })
     const keyboard = new KeyboardBuilder()

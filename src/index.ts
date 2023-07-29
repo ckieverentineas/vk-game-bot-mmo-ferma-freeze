@@ -7,8 +7,9 @@ import { Main_Menu, Main_Menu_Close, User_Menu_Show } from "./module/game/accoun
 import { Builder_Control, Builder_Controller } from "./module/game/account/builder";
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
-import { Exchange_Control, Income_Control } from "./module/game/account/service";
+import { Exchange_Control, Income_Control, Sleep } from "./module/game/account/service";
 import { registerUserRoutes } from "./player";
+import { Rand_Int } from "./module/fab/random";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -97,6 +98,20 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 	}
 	return await next();
 })*/
+vk.updates.on('wall_post_new', async (context: Context, next: any) => { 
+	if (Math.abs(context.wall.authorId) == group_id && context.wall.createdUserId == root[0]) {
+		for (const user of await prisma.user.findMany({ where: { status: { not: "banned" } } }) ) {
+			await Sleep(await Rand_Int(15000))
+			try {
+				vk.api.messages.send({ peer_id: user.idvk, random_id: 0, message: "⚙ Уведомление", attachment: context.wall })
+			}
+			catch (e) {
+				console.log(`User ${user.idvk} blocked send message in chat`)
+			}
+		}
+	}
+	return await next();
+})
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
 	if (user.status == "banned") { return await next() }
