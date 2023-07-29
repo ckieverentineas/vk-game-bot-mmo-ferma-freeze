@@ -69,7 +69,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
     hearManager.hear(/!cmd/gm, async (context: any) => {
         // !cmd increment gold 19319319
         //   0    1         2     3
-        if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && root.includes(context.senderId) && context.text.split(' ').length == 4) {
+        if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && root.includes(String(context.senderId)) && context.text.split(' ').length == 4) {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
             if (!target) { return }
             const user: User | null = await prisma.user.findFirst({ where: { idvk: target } })

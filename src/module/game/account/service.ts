@@ -36,7 +36,7 @@ export async function Income_Control(context: Context, user: User) {
             prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef } } }),
             prisma.analyzer.update({ where: { id: analyzer.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef } } })
         ]).then(([, user_income]) => {
-            event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии:${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей:${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}` 
+            event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии: ${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей: ${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}` 
             console.log(`⌛ Работники ${user.idvk} предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии:${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей:${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}`);
         })
         .catch((error) => {
@@ -83,7 +83,7 @@ export async function Exchange_Control(context: Context, user: User) {
             prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: user.energy }, gold: { increment: user.energy/course } } }),
             prisma.analyzer.update({ where: { id: analyzer.id }, data: { gold: { increment: user.energy/course } } })
         ]).then(([user_up]) => {
-            event_logger = `⌛ На бирже вы обменяли ${user.energy.toFixed(2)}⚡ на ${(user.energy/course).toFixed(2)} шекелей по курсу ${course}\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}` 
+            event_logger = `⌛ На бирже вы обменяли ${user.energy.toFixed(2)}⚡ на ${(user.energy/course).toFixed(2)} шекелей по курсу ${course.toFixed(2)}\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}` 
             console.log(`⌛ На бирже ${user.idvk} обменял ${user.energy.toFixed(2)}⚡ на ${(user.gold/course).toFixed(2)} шекелей\n На вашем счете было ${user.gold.toFixed(2)}, новый баланс: ${user_up.gold.toFixed(2)}`);
         })
         .catch((error) => {
