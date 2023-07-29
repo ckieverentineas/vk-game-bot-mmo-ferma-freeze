@@ -12,7 +12,7 @@ import { registerUserRoutes } from "./player";
 dotenv.config();
 
 export const token: string = process.env.token as string
-export const root: number = Number(process.env.root) //root user
+export const root: string[] = process.env.root!.split(', '); //root user
 export const chat_id: number = Number(process.env.chat_id) //chat for logs
 export const group_id: number = Number(process.env.group_id)//clear chat group
 export const timer_text = { answerTimeLimit: 300_000 } // ожидать пять минут
@@ -47,7 +47,7 @@ vk.updates.on('message_new', async (context: Context, next: any) => {
 })
 vk.updates.on('like_add', async (context: Context, next: any) => {
 	//проверяем есть ли пользователь в базах данных
-	const whitelist = ['post', 'comment']
+	const whitelist = ['post'/*, 'comment' */]
 	if ( !whitelist.includes(context.objectType) ) { return await next() }
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
 	console.log(context)
@@ -85,7 +85,7 @@ vk.updates.on('video_comment_delete', async (context: Context, next: any) => {
 		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Штраф за удаление комментария с видео ${context.type} 10⚡. Ваш баланс ${user_gift.energy.toFixed(2)}` })
 	}
 	return await next();
-})*/
+})
 vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 	//проверяем есть ли пользователь в базах данных
 	console.log(context)
@@ -95,7 +95,7 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Штраф за удаление комментария с поста ${context.type} 10⚡. Ваш баланс ${user_gift.energy.toFixed(2)}` })
 	}
 	return await next();
-})
+})*/
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
 	//await Sleep(4000)

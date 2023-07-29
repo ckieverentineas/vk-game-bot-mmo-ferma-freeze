@@ -15,8 +15,11 @@ export async function Builder_Control(context: Context, user: User) {
     let cur = context.eventPayload.office_current ?? 0
     const builder = builder_list[cur]
     if (builder_list.length > 0) {
-        keyboard.callbackButton({ label: 'Улучшить', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
-        .callbackButton({ label: 'Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id }, color: 'secondary' }).row()
+        const sel = buildin[builder.name]
+        const lvl_new = builder.lvl+1
+        const price_new = sel.price*(lvl_new**sel.koef_price)
+        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
+        .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n⚒ Количество: ${builder.count}\n`;
     } else {

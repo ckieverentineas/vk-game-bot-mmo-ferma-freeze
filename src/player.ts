@@ -7,10 +7,10 @@ import { Analyzer, User } from "@prisma/client";
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
     hearManager.hear(/енотик/, async (context: any) => {
-        if (context.senderId == root) {
+        if (context.senderId == root[0]) {
             await context.sendDocuments({ value: `./prisma/dev.db`, filename: `dev.db` }, { message: '💡 Открывать на сайте: https://sqliteonline.com/' } );
             await vk.api.messages.send({
-                peer_id: root,
+                peer_id: Number(root[0]),
                 random_id: 0,
                 message: `‼ @id${context.senderId}(Admin) делает бекап баз данных dev.db.`
             })
@@ -69,7 +69,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
     hearManager.hear(/!cmd/gm, async (context: any) => {
         // !cmd increment gold 19319319
         //   0    1         2     3
-        if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && root == context.senderId && context.text.split(' ').length == 4) {
+        if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && root.includes(context.senderId) && context.text.split(' ').length == 4) {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
             if (!target) { return }
             const user: User | null = await prisma.user.findFirst({ where: { idvk: target } })
