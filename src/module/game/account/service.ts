@@ -1,5 +1,5 @@
 import { User, Builder, Trigger, Analyzer } from "@prisma/client"
-import { Context, KeyboardBuilder } from "vk-io"
+import { Context, Keyboard, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
 
@@ -8,7 +8,14 @@ export function Sleep(ms: number) {
         setTimeout(resolve, ms);
     });
 }
-
+export async function Send_Message(idvk: number, message: string, keyboard: Keyboard) {
+    message = message ? message : 'invalid message'
+    try {
+        keyboard ? await vk.api.messages.send({ peer_id: idvk, random_id: 0, message: `${message}`, keyboard: keyboard } ) : await vk.api.messages.send({ peer_id: idvk, random_id: 0, message: `${message}` } )
+    } catch (e) {
+        console.log(`Ошибка отправки сообщения: ${e}`)
+    }
+}
 export async function Income_Control(context: Context, user: User) {
     const builders: Builder[] | null = await prisma.builder.findMany({ where: { id_user: user.id } })
     const keyboard = new KeyboardBuilder()
@@ -80,7 +87,7 @@ export async function Income_Control(context: Context, user: User) {
 export async function Exchange_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     const course = 1 + Math.random()
-    let event_logger = `Для обмена энергии на шекели нужно минимум ${course} энергии`
+    let event_logger = `Для обмена энергии на шекели нужно минимум ${course.toFixed(2)} энергии`
     
     if (user.energy >= course) {
         let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })

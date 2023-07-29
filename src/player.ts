@@ -111,8 +111,8 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 if (user) {
                     const login = await prisma.user.update({ where: { id: user.id }, data: { status: "banned" } })
                     await context.send(`OK`)
-                    vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `☠ Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`})
-                    vk.api.messages.send({ peer_id: login.idvk, random_id: 0, message: `☠ @id${login.idvk}(${login.name}) учетная запись приостановлена! Обращайтесь в тех поддержку: https://vk.com/fermatex`})
+                    await vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `☠ Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`})
+                    await vk.api.messages.send({ peer_id: login.idvk, random_id: 0, message: `☠ @id${login.idvk}(${login.name}) учетная запись приостановлена! Обращайтесь в тех поддержку: https://vk.com/fermatex`})
                     console.log(`Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`)
                 } else {
                     await context.send(`@id${target}(Пользователя) не существует`)
@@ -129,8 +129,8 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 if (user) {
                     const login = await prisma.user.update({ where: { id: user.id }, data: { status: "player" } })
                     await context.send(`OK`)
-                    vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `✅ Для @id${login.idvk}(${login.name}) учетная запись возобновлена!`})
-                    vk.api.messages.send({ peer_id: login.idvk, random_id: 0, message: `✅ @id${login.idvk}(${login.name}) учетная запись возобновлена!`})
+                    await vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `✅ Для @id${login.idvk}(${login.name}) учетная запись возобновлена!`})
+                    await vk.api.messages.send({ peer_id: login.idvk, random_id: 0, message: `✅ @id${login.idvk}(${login.name}) учетная запись возобновлена!`})
                     console.log(`Для @id${login.idvk}(${login.name}) учетная запись приостановлена!`)
                 } else {
                     await context.send(`@id${target}(Пользователя) не существует`)
@@ -147,8 +147,8 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             if (!target) { return }
             const user_from: User | null = await prisma.user.findFirst({ where: { idvk: context.senderId } })
             const user_to: User | null = await prisma.user.findFirst({ where: { idvk: target } })
-            if ( !user_from && !user_to) { return }
-            if ( user_from?.idvk && user_to?.idvk) { await context.send(`Самому себе нельзя передавать!`); return }
+            if ( !user_from || !user_to) { await context.send(`Вы или получатель шекелей не зарегестрированы!`); return }
+            if ( user_from?.idvk == user_to?.idvk) { await context.send(`Самому себе нельзя передавать!`); return }
             const [cmd, value, action] = context.text.split(' ');
             const operation_list = ['шекелей', 'шекели', 'шекель']
             if (operation_list.includes(action) && parseFloat(value) > 0 && user_from && user_to && parseFloat(value) <= user_from.gold) {

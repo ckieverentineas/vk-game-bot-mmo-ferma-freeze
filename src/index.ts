@@ -103,7 +103,7 @@ vk.updates.on('wall_post_new', async (context: Context, next: any) => {
 		for (const user of await prisma.user.findMany({ where: { status: { not: "banned" } } }) ) {
 			await Sleep(await Rand_Int(15000))
 			try {
-				vk.api.messages.send({ peer_id: user.idvk, random_id: 0, message: "⚙ Уведомление", attachment: context.wall })
+				await vk.api.messages.send({ peer_id: user.idvk, random_id: 0, message: "⚙ Уведомление", attachment: context.wall })
 			}
 			catch (e) {
 				console.log(`User ${user.idvk} blocked send message in chat`)
