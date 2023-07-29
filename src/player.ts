@@ -52,6 +52,20 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         users += user_me
         await context.send(`${users}`)
     })
+    hearManager.hear(/стат -g|Стат -g/gm, async (context: any) => {
+        let users = 'Рейтинг по добытым шекелям\n\n'
+        let counter = 1
+        let user_me = null
+        for (const user of await prisma.analyzer.findMany({ orderBy: { gold: 'desc' }, include: { user: true } })) {
+            if (counter <= 10) {
+                users += `${counter} - ${user.user.name.slice(0, 20)} --> ${user.gold.toFixed(2)}💰\n`
+            }
+            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - @id${user.user.idvk}(${user.user.name.slice(0, 20)}) --> ${user.gold.toFixed(2)}💰`}
+            counter++
+        }
+        users += user_me
+        await context.send(`${users}`)
+    })
     hearManager.hear(/осмотреть|Осмотреть/gm, async (context: any) => {
         if (context.forwards[0]?.senderId || context.replyMessage?.senderId) {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
@@ -140,8 +154,6 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         }
     })
     hearManager.hear(/передать/gm, async (context: any) => {
-        // !cmd increment gold 19319319
-        //   0    1         2     3
         if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && context.text.split(' ').length == 3 && context.peerType == 'chat') {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
             if (!target) { return }

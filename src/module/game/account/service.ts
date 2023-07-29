@@ -36,8 +36,8 @@ export async function Income_Control(context: Context, user: User) {
             for (const worker of await prisma.worker.findMany({ where: { id_builder: builder.id } })) {
                 income_gold += builder.type == "gold" ? worker.income : 0
                 income_energy += builder.type == "energy" ? worker.income : 0
-                income_gold *= builder.type == "gold" ? worker.speed : 0
-                income_energy *= builder.type == "energy" ? worker.speed : 0
+                income_gold *= builder.type == "gold" ? worker.speed : 1
+                income_energy *= builder.type == "energy" ? worker.speed : 1
             }
         }
         const dateold: Date = new Date(trigger.update)
