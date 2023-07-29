@@ -153,6 +153,25 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             }
         }
     })
+    hearManager.hear(/!чиню/, async (context) => {
+        if (context.isOutbox == false && root.includes(String(context.senderId)) && context.text) {
+            for (const builder of await prisma.builder.findMany({})) {
+                if (builder.name == "Офис") {
+                    if (builder.type != 'gold') {
+                        const data = await prisma.builder.update({ where: { id: builder.id }, data: { type: "gold" } })
+                        await context.send(`Офис ${builder.id} меняет тип добычи с ${builder.type} на ${data.type}`)
+                    } 
+                }
+                if (builder.name == "Электростанция") {
+                    if (builder.type != 'energy') {
+                        const data = await prisma.builder.update({ where: { id: builder.id }, data: { type: "energy" } })
+                        await context.send(`Электростанция ${builder.id} меняет тип добычи с ${builder.type} на ${data.type}`)
+                    } 
+                }
+            }
+            await context.send(`Починка прошла успешно`)
+        }
+    })
     hearManager.hear(/передать/gm, async (context: any) => {
         if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && context.text.split(' ').length == 3 && context.peerType == 'chat') {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
