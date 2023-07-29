@@ -18,35 +18,31 @@ export async function Worker_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     const worker_list: Worker[] = await prisma.worker.findMany({ where: { id_user: user.id } })
     const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
-    let event_logger = ``
-    let i = context.eventPayload.office_current ?? 0
+    let event_logger = `❄ Отдел кадров:\n\n`
+    let cur = context.eventPayload.office_current ?? 0
+    const worker = worker_list[cur]
     if (worker_list.length > 0) {
-        event_logger += worker_list.map((worker: Worker) => {
-            let builder: Builder | null = Finder_Builder(builder_list, worker)
-            keyboard.callbackButton({ label: `💬 ${worker.name}-${worker.id}`, payload: { command: 'worker_control' }, color: 'secondary' }).row()
-            .callbackButton({ label: 'Обучить', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: i, target: worker.id  }, color: 'secondary' }).row()
-            .callbackButton({ label: 'Работа', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: i, target: worker.id }, color: 'secondary' }).row()
-            .callbackButton({ label: 'Уволить', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: i, target: worker.id }, color: 'secondary' }).row()
-            //.callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()
-            return `💬 Работник: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(2)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n`;
-        }).join('\n');
+        let builder: Builder | null = Finder_Builder(builder_list, worker)
+        keyboard.callbackButton({ label: 'Обучить', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: cur, target: worker.id  }, color: 'secondary' }).row()
+        .callbackButton({ label: 'Работа', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: cur, target: worker.id }, color: 'secondary' }).row()
+        .callbackButton({ label: 'Уволить', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: cur, target: worker.id }, color: 'secondary' }).row()
+        //.callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()
+        event_logger +=`💬 Работник: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(2)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n`;
     } else {
         event_logger = `💬 Вы еще не наняли рабочих, как насчет кого-то нанять?`
     }
-    //новый офис
-    if (worker_list.length == 0) {
-        keyboard.callbackButton({ label: '➕', payload: { command: 'worker_controller', command_sub: 'worker_add' }, color: 'secondary' })
-    }
-    /*
     //предыдущий офис
-    if (builder_list.length > 1 && i > 0) {
-        keyboard.callbackButton({ label: '←', payload: { command: 'office', office_current: i-1, target: office[i].id }, color: 'secondary' })
+    if (worker_list.length > 1 && cur > 0) {
+        keyboard.callbackButton({ label: '←', payload: { command: 'worker_control', office_current: cur-1, target: worker.id }, color: 'secondary' })
     }
     //следующий офис
-    if (builder_list.length > 1 && i < builder_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'office', office_current: i+1, target: office[i].id }, color: 'secondary' })
+    if (worker_list.length > 1 && cur < worker_list.length-1) {
+        keyboard.callbackButton({ label: '→', payload: { command: 'worker_control', office_current: cur+1, target: worker.id }, color: 'secondary' })
     }
-    */
+    //новый офис
+    const worker_check: number = await prisma.worker.count({ where: { id_user: user.id }})
+    const prices = (worker_check+1)*50 >= 500 ? 500 : (worker_check+1)*50
+    keyboard.callbackButton({ label: `➕${prices}💰`, payload: { command: 'worker_controller', command_sub: 'worker_add' }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
@@ -73,26 +69,37 @@ async function Worker_Target(context: Context, user: User, target: number) {
     //let attached = await Image_Random(context, "beer")
     const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
     const keyboard = new KeyboardBuilder()
-    let event_logger = `Выберите новое место работы для вашего работника: \n\n`
-    if (context.eventPayload.selector) {
-        await prisma.$transaction([
-            prisma.worker.update({ where: { id: target }, data: { id_builder: context.eventPayload.selector } }),
-            prisma.builder.findFirst({ where: { id: context.eventPayload.selector }})
-        ]).then(([worker_upd, builder]) => {
-            event_logger = `⌛ Рабочий ${worker_upd.name}-${worker_upd.id} теперь работает в здании ${builder?.name}-${builder?.id}.\n` 
-            console.log(`⌛ Рабочий игрока ${user.idvk} ${worker_upd.name}-${worker_upd.id} теперь работает в здании ${builder?.name}-${builder?.id}.`);
-        })
-        .catch((error) => {
-            event_logger = `⌛ Произошла ошибка изменения места работы для работника, попробуйте позже` 
-            console.error(`Ошибка: ${error.message}`);
-        });
+    let event_logger = `❄ Выберите новое место работы для вашего работника: \n\n`
+    
+    if (context.eventPayload.selector || context.eventPayload.selector == 'zero') {
+        //const worker_checker: number = await prisma.worker.count({ where: { id_builder: context.eventPayload.selector | 0 } })
+        const id_build = context.eventPayload.selector == 'zero' ? 0 : context.eventPayload.selector
+        const worker_checker: number = await prisma.worker.count({ where: { id_builder: id_build } })
+        const builder = await prisma.builder.findFirst({ where: { id: id_build }})
+        if (worker_checker < builder!.worker) {
+            await prisma.$transaction([
+                prisma.worker.update({ where: { id: target }, data: { id_builder: id_build } }),
+                
+            ]).then(([worker_upd]) => {
+                event_logger = `⌛ Рабочий ${worker_upd.name}-${worker_upd.id} теперь работает ${context.eventPayload.selector == 'zero' ? 'на Фрилансе' : `в здании ${builder?.name}-${builder?.id}`}.\n` 
+                console.log(`⌛ Рабочий игрока ${user.idvk} ${worker_upd.name}-${worker_upd.id} теперь работает в здании ${builder?.name}-${builder?.id}.`);
+            })
+            .catch((error) => {
+                event_logger = `⌛ Произошла ошибка изменения места работы для работника, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        } else {
+            event_logger += `В здании ${builder!.name}-${builder!.id} уже работает ${worker_checker}/${builder!.worker}👥 рабочих!`
+        }
+        
     } else {
         if (builder_list.length > 0) {
-            event_logger += builder_list.map((builder: Builder) => {
-                keyboard.callbackButton({ label: `💬 ${builder.name}-${builder.id}`, payload: { command: 'worker_control' }, color: 'secondary' })
-                .callbackButton({ label: '✅', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: builder.id }, color: 'secondary' }).row()
-                return `💬 Имя: ${builder.name}-${builder.id}\n`;
-            }).join('\n');
+            for (const builder of builder_list) {
+                const worker_checker: number = await prisma.worker.count({ where: { id_builder: builder.id } })
+                keyboard.callbackButton({ label: `✅ ${worker_checker}/${builder.worker}👥 ${builder.name}-${builder.id}`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: builder.id }, color: 'secondary' }).row()
+                event_logger += `💬 Здание: ${builder.name}-${builder.id}\n`;
+            }
+            keyboard.callbackButton({ label: `❌ Фриланс`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: 'zero' }, color: 'secondary' })
         } else {
             event_logger = `В данный момент нет доступных целей...`
         }
@@ -120,6 +127,10 @@ async function Worker_Add(context: Context, user: User, target: number) {
             event_logger = `⌛ Произошла ошибка нанимания нового работника, попробуйте позже` 
             console.error(`Ошибка: ${error.message}`);
         });
+    } else {
+        const worker_check: number = await prisma.worker.count({ where: { id_user: user.id }})
+        const prices = (worker_check+1)*50 >= 500 ? 500 : (worker_check+1)*50
+        event_logger = `⌛ На вашем банковском счете недостает ${(prices-user.gold).toFixed(2)} шекелей для нанимания нового кадра.`
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: target }, color: 'secondary' }).inline().oneTime() 

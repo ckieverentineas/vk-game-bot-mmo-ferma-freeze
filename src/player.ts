@@ -105,7 +105,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
     hearManager.hear(/передать/gm, async (context: any) => {
         // !cmd increment gold 19319319
         //   0    1         2     3
-        if (context.forwards[0].senderId && root == context.senderId && context.text.split(' ').length == 3 && context.peerType == 'chat') {
+        if (context.forwards[0].senderId && context.text.split(' ').length == 3 && context.peerType == 'chat') {
             const user_from: User | null = await prisma.user.findFirst({ where: { idvk: context.senderId } })
             const user_to: User | null = await prisma.user.findFirst({ where: { idvk: context.forwards[0].senderId } })
             if ( !user_from && !user_to) { return }
