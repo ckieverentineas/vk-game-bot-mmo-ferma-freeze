@@ -99,7 +99,6 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
 	//await Sleep(4000)
-	
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
 	const config: any = {
 		"main_menu": Main_Menu,

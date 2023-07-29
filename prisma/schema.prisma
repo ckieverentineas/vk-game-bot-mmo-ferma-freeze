@@ -30,6 +30,7 @@ model Builder {
   name    String
   lvl     Int      @default(1)
   xp      Float    @default(0)
+  type    String   @default("energy")
   income  Float    @default(1)
   cost    Float    @default(100)
   worker  Int      @default(1)

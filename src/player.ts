@@ -53,8 +53,9 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         await context.send(`${users}`)
     })
     hearManager.hear(/осмотреть|Осмотреть/gm, async (context: any) => {
-        if (context.forwards[0].senderId) {
-            const user = await prisma.user.findFirst({ where: { idvk: context.forwards[0].senderId } })
+        if (context.forwards[0]?.senderId || context.replyMessage?.senderId) {
+            const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
+            const user = await prisma.user.findFirst({ where: { idvk: target } })
             if (user) {
                 await context.send(`💬 Промышленный шпионаж показал, что это бизнес, ${user.name}:\n🌐 Корпорация: ${user.id_corportation == 0? 'Не в корпорации' : 'Корпа'}\n📈 Уровень: ${user.lvl}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}`)
             }
@@ -68,8 +69,10 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
     hearManager.hear(/!cmd/gm, async (context: any) => {
         // !cmd increment gold 19319319
         //   0    1         2     3
-        if (context.forwards[0].senderId && root == context.senderId && context.text.split(' ').length == 4) {
-            const user: User | null = await prisma.user.findFirst({ where: { idvk: context.forwards[0].senderId } })
+        if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && root == context.senderId && context.text.split(' ').length == 4) {
+            const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
+            if (!target) { return }
+            const user: User | null = await prisma.user.findFirst({ where: { idvk: target } })
             const [cmd, action, field, value] = context.text.split(' ');
             const operation_list = ['increment', 'decrement']
             const target_list = ['gold', 'energy']
@@ -98,17 +101,18 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             } else {
                 await context.send(`Ошибка в команде, комилятор влом писать`)
             }
-        } else {
-            await context.send(`Ошибка в команде, комилятор влом писать`)
         }
     })
     hearManager.hear(/передать/gm, async (context: any) => {
         // !cmd increment gold 19319319
         //   0    1         2     3
-        if (context.forwards[0].senderId && context.text.split(' ').length == 3 && context.peerType == 'chat') {
+        if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && context.text.split(' ').length == 3 && context.peerType == 'chat') {
+            const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
+            if (!target) { return }
             const user_from: User | null = await prisma.user.findFirst({ where: { idvk: context.senderId } })
-            const user_to: User | null = await prisma.user.findFirst({ where: { idvk: context.forwards[0].senderId } })
+            const user_to: User | null = await prisma.user.findFirst({ where: { idvk: target } })
             if ( !user_from && !user_to) { return }
+            if ( user_from?.idvk && user_to?.idvk) { await context.send(`Самому себе нельзя передавать!`); return }
             const [cmd, value, action] = context.text.split(' ');
             const operation_list = ['шекелей', 'шекели', 'шекель']
             if (operation_list.includes(action) && parseFloat(value) > 0 && user_from && user_to && parseFloat(value) <= user_from.gold) {
