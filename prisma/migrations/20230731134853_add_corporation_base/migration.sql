@@ -1,0 +1,30 @@
+-- CreateTable
+CREATE TABLE "Corporation" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_user" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "lvl" INTEGER NOT NULL DEFAULT 1,
+    "xp" REAL NOT NULL DEFAULT 0,
+    "gold" REAL NOT NULL DEFAULT 350,
+    "energy" REAL NOT NULL DEFAULT 0,
+    "reputation" REAL NOT NULL DEFAULT 0,
+    "id_corportation" INTEGER NOT NULL DEFAULT 0,
+    "member" INTEGER NOT NULL DEFAULT 6,
+    "crdate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "update" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Corporation_Builder" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "lvl" INTEGER NOT NULL DEFAULT 1,
+    "xp" REAL NOT NULL DEFAULT 0,
+    "type" TEXT NOT NULL,
+    "koef" REAL NOT NULL DEFAULT 1,
+    "cost" REAL NOT NULL DEFAULT 100,
+    "id_corporation" INTEGER NOT NULL,
+    "crdate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "update" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Corporation_Builder_id_corporation_fkey" FOREIGN KEY ("id_corporation") REFERENCES "Corporation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);

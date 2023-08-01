@@ -17,7 +17,7 @@ model User {
   energy          Float      @default(0)
   reputation      Float      @default(0)
   status          String     @default("player")
-  id_corportation Int        @default(0)
+  id_corporation  Int        @default(0)
   crdate          DateTime   @default(now())
   update          DateTime   @default(now())
   Bulder          Builder[]
@@ -60,6 +60,36 @@ model Worker {
   user       User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
+model Corporation {
+  id                  Int                   @id @default(autoincrement())
+  id_user             Int
+  name                String
+  lvl                 Int                   @default(1)
+  xp                  Float                 @default(0)
+  gold                Float                 @default(350)
+  energy              Float                 @default(0)
+  reputation          Float                 @default(0)
+  id_corportation     Int                   @default(0)
+  member              Int                   @default(6)
+  crdate              DateTime              @default(now())
+  update              DateTime              @default(now())
+  Corporation_Builder Corporation_Builder[]
+}
+
+model Corporation_Builder {
+  id             Int         @id @default(autoincrement())
+  name           String
+  lvl            Int         @default(1)
+  xp             Float       @default(0)
+  type           String
+  koef           Float       @default(1)
+  cost           Float       @default(100)
+  id_corporation Int
+  crdate         DateTime    @default(now())
+  update         DateTime    @default(now())
+  corporation    Corporation @relation(fields: [id_corporation], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
 model Trigger {
   id      Int      @id @default(autoincrement())
   name    String
@@ -71,14 +101,14 @@ model Trigger {
 }
 
 model Analyzer {
-  id      Int      @id @default(autoincrement())
-  energy  Float    @default(0)
-  gold    Float    @default(0)
-  gold_from Float @default(0)
-  gold_to Float @default(0)
-  xp      Float    @default(0)
-  point   Int      @default(0)
-  user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  id_user Int
-  crdate  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  energy    Float    @default(0)
+  gold      Float    @default(0)
+  gold_from Float    @default(0)
+  gold_to   Float    @default(0)
+  xp        Float    @default(0)
+  point     Int      @default(0)
+  user      User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id_user   Int
+  crdate    DateTime @default(now())
 }

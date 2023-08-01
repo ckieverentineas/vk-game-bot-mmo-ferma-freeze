@@ -159,7 +159,7 @@ async function Worker_Upgrade(context: Context, user: User, target: number) {
             console.error(`Ошибка: ${error.message}`);
         });
     } else {
-        event_logger += `\n У рабочего ${worker?.name} не хватает очков обучения. Очки обучения начисляются раз в неделю каждому рабочему в процессе сбора Прибыли.`
+        event_logger += `\n У рабочего ${worker?.name} не хватает очков обучения. Очки обучения начисляются раз в день каждому рабочему в процессе сбора Прибыли.`
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
