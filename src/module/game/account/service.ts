@@ -1,4 +1,4 @@
-import { User, Builder, Trigger, Analyzer } from "@prisma/client"
+import { User, Builder, Trigger, Analyzer, Corporation, Corporation_Builder } from "@prisma/client"
 import { Context, Keyboard, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
@@ -16,6 +16,7 @@ export async function Send_Message(idvk: number, message: string, keyboard?: Key
         console.log(`Ошибка отправки сообщения: ${e}`)
     }
 }
+
 export async function Income_Control(context: Context, user: User) {
     const builders: Builder[] | null = await prisma.builder.findMany({ where: { id_user: user.id } })
     const keyboard = new KeyboardBuilder()
@@ -29,7 +30,9 @@ export async function Income_Control(context: Context, user: User) {
     }
     if (trigger) {
         let income_energy = 0
+        let income_gold_bonus = 0
         let income_gold = 0
+        let income_gold_corporation = 0
         for (const builder of builders) {
             income_gold += builder.type == "gold" ? builder.income : 0
             income_energy += builder.type == "energy" ? builder.income : 0
@@ -40,22 +43,53 @@ export async function Income_Control(context: Context, user: User) {
                 income_energy *= builder.type == "energy" ? worker.speed : 1
             }
         }
+        const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
+        const corp_build: Corporation_Builder[] = await prisma.corporation_Builder.findMany({ where: { id_corporation: user.id_corporation } })
+        let acum = 0
+        for ( const builder of corp_build) {
+            if (builder.name == "Банк") {
+                income_gold_bonus = income_gold * (builder.income/100)
+                acum += income_gold_bonus
+            }
+            if (builder.name == "Фабрикатор") {
+                income_gold_corporation = income_gold * (builder.income/100)
+            }
+        }
         const dateold: Date = new Date(trigger.update)
         const koef: number = (Number(datenow) - Number(dateold))/3600000
         let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
         if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
-        await prisma.$transaction([
-            prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } }),
-            prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef } } }),
-            prisma.analyzer.update({ where: { id: analyzer.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef } } })
-        ]).then(([, user_income]) => {
-            event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии: ${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей: ${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}` 
-            console.log(`⌛ Работники ${user.idvk} предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии:${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей:${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}`);
-        })
-        .catch((error) => {
-            event_logger = `⌛ Произошла ошибка предоставления отчета о прибыли, попробуйте позже` 
-            console.error(`Ошибка: ${error.message}`);
-        });
+        
+        if (corp) {
+            await prisma.$transaction([
+                prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } }),
+                prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef+income_gold_bonus*koef } } }),
+                prisma.analyzer.update({ where: { id: analyzer.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef+income_gold_bonus*koef } } }),
+                prisma.corporation.update({ where: { id: user.id_corporation }, data: { gold: { increment: income_gold_corporation }}})
+            ]).then(([, user_income]) => {
+                event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии: ${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей: ${(income_gold*koef).toFixed(2)}(+${(income_gold_bonus*koef).toFixed(2)}), ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}` 
+                event_logger += `\n\n🌐 На счет корпорации ${corp.name} клонировано ${income_gold_corporation.toFixed(2)} шекелей`
+                console.log(`⌛ Работники ${user.idvk} предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии:${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей:${(income_gold*koef).toFixed(2)}(+${income_gold_bonus.toFixed(2)}), ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}`);
+            })
+            .catch((error) => {
+                event_logger = `⌛ Произошла ошибка предоставления отчета о прибыли, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        } else {
+            await prisma.$transaction([
+                prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } }),
+                prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef } } }),
+                prisma.analyzer.update({ where: { id: analyzer.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef } } })
+            ]).then(([, user_income]) => {
+                event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии: ${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей: ${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}` 
+                console.log(`⌛ Работники ${user.idvk} предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии:${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей:${(income_gold*koef).toFixed(2)}, ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}`);
+            })
+            .catch((error) => {
+                event_logger = `⌛ Произошла ошибка предоставления отчета о прибыли, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+        
     }
     const trigger_worker: Trigger | null = await prisma.trigger.findFirst({ where: { id_user: user.id, name: 'worker' } })
     if (!trigger_worker) { 
