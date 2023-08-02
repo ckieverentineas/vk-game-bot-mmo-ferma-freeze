@@ -173,7 +173,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             await context.send(`Починка прошла успешно`)
         }
     })
-    hearManager.hear(/передать/gm, async (context: any) => {
+    hearManager.hear(/передать|Передать/gm, async (context: any) => {
         if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && context.text.split(' ').length == 3 && context.peerType == 'chat') {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
             if (!target) { return }
@@ -197,7 +197,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                     console.log(`💰 ${cmd} Транзакция шекелей в сумме ${parseFloat(value)} успешно завершена от ${user_froms.name} к ${user_tos.name}`);
                     context.send(`💰 Транзакция шекелей в сумме ${parseFloat(value)} успешно завершена от ${user_froms.name} к ${user_tos.name}K`)
                     vk.api.messages.send({ peer_id: user_tos.idvk, random_id: 0, message: `💰 Ваш счет увеличился с ${user_to.gold.toFixed(2)} до ${user_tos.gold.toFixed(2)}, отправитель @id${user_from.idvk}(${user_from.name})` })
-                    vk.api.messages.send({ peer_id: user_froms.idvk, random_id: 0, message: `💰 Ваш счет уменшилься с ${user_from.gold.toFixed(2)} до ${user_froms.gold.toFixed(2)}, при передачи средств к @id${user_to.idvk}(${user_to.name})` })
+                    vk.api.messages.send({ peer_id: user_froms.idvk, random_id: 0, message: `💰 Ваш счет уменьшился с ${user_from.gold.toFixed(2)} до ${user_froms.gold.toFixed(2)}, при передачи средств к @id${user_to.idvk}(${user_to.name})` })
                 })
                 .catch((error) => {
                     context.send(`💰 ошибка транзакции шекелей...`)
@@ -231,7 +231,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             }
         }
     })
-    hearManager.hear(/!вступить/gm, async (context: any) => {
+    hearManager.hear(/!вступить|!Вступить/gm, async (context: any) => {
         if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) /*&& context.peerType == 'chat'*/) {
             let event_logger = ''
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId

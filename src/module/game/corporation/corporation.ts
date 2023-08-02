@@ -1,4 +1,4 @@
-import { User, Builder } from "@prisma/client"
+import { User, Builder, Corporation } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
@@ -8,34 +8,19 @@ const buildin: { [key: string]: { price: number, income: number, cost: number, k
     "Электростанция": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'energy', smile: '⚡', description: "Электростанция является источником энергии для вашего бизнеса в виде энергии" }
 }
 
-export async function Builder_Control(context: Context, user: User) {
+export async function Main_Menu_Corporation(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
-    let event_logger = `❄ Отдел управления сооружениями:\n\n`
-    let cur = context.eventPayload.office_current ?? 0
-    const builder = builder_list[cur]
-    if (builder_list.length > 0) {
-        const sel = buildin[builder.name]
-        const lvl_new = builder.lvl+1
-        const price_new = sel.price*(lvl_new**sel.koef_price)
-        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
-        .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id }, color: 'secondary' }).row()
-        //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
-        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n⚒ Количество: ${builder.count}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
+    const corporation: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
+    let event_logger = `❄ Отделение корпорации:\n\n`
+    if (corporation) {
+        const member_counter: number = await prisma.user.count({ where: { id_corporation: user.id_corporation} })
+        const leader = await prisma.user.findFirst({ where: { id: corporation.id_user } })
+        event_logger +=`💬 Корпорация: ${corporation.name}-${corporation.id}\n🌐 Основатель: @id${leader?.idvk}(${leader?.name})\n📈 Уровень: ${corporation.lvl}\n📗 Опыт: ${corporation.xp.toFixed(2)}\n💰 Шекели: ${corporation.gold.toFixed(2)}\n⚡ Энергия: ${corporation.energy.toFixed(2)}\n🤝 Репутация: ${corporation.reputation.toFixed(2)}\n👥 Сотрудников: ${member_counter}/${corporation.member}\n`;
+        keyboard.callbackButton({ label: '🏛 Постройки', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
+        .callbackButton({ label: '👥 Сотрудники', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
     } else {
-        event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
+        event_logger = `💬 Вы еще не состоите в корпорации, напишите основать корпорацию [название корпорации] или в игровом чате отправьте ответ на сообщение !вступить`
     }
-    
-    //предыдущий офис
-    if (builder_list.length > 1 && cur > 0) {
-        keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', office_current: cur-1, target: builder.id }, color: 'secondary' })
-    }
-    //следующий офис
-    if (builder_list.length > 1 && cur < builder_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id }, color: 'secondary' })
-    }
-    //новый офис
-    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add' }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })

@@ -66,10 +66,9 @@ model Corporation {
   name                String
   lvl                 Int                   @default(1)
   xp                  Float                 @default(0)
-  gold                Float                 @default(350)
-  energy              Float                 @default(0)
+  gold                Float                 @default(1750)
+  energy              Float                 @default(1750)
   reputation          Float                 @default(0)
-  id_corportation     Int                   @default(0)
   member              Int                   @default(6)
   crdate              DateTime              @default(now())
   update              DateTime              @default(now())

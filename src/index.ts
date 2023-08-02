@@ -10,6 +10,7 @@ import { Worker_Control, Worker_Controller } from "./module/game/account/worker"
 import { Exchange_Control, Income_Control, Sleep } from "./module/game/account/service";
 import { registerUserRoutes } from "./player";
 import { Rand_Int } from "./module/fab/random";
+import { Main_Menu_Corporation } from "./module/game/corporation/corporation";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -120,6 +121,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	const config: any = {
 		"main_menu": Main_Menu,
 		"main_menu_close": Main_Menu_Close,
+		"main_menu_corporation": Main_Menu_Corporation,
 		"builder_control": Builder_Control,
 		"builder_controller": Builder_Controller,
 		"worker_control": Worker_Control,
