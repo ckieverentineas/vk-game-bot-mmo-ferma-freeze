@@ -41,6 +41,20 @@ model Builder {
   update  DateTime @default(now())
   user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
+model Corporation_Builder {
+  id             Int         @id @default(autoincrement())
+  name           String
+  lvl            Int         @default(1)
+  xp             Float       @default(0)
+  type           String
+  income  Float    @default(1)
+  cost    Float    @default(100)
+  worker  Int      @default(1)
+  id_corporation Int
+  crdate         DateTime    @default(now())
+  update         DateTime    @default(now())
+  corporation    Corporation @relation(fields: [id_corporation], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
 
 model Worker {
   id         Int      @id @default(autoincrement())
@@ -75,19 +89,7 @@ model Corporation {
   Corporation_Builder Corporation_Builder[]
 }
 
-model Corporation_Builder {
-  id             Int         @id @default(autoincrement())
-  name           String
-  lvl            Int         @default(1)
-  xp             Float       @default(0)
-  type           String
-  koef           Float       @default(1)
-  cost           Float       @default(100)
-  id_corporation Int
-  crdate         DateTime    @default(now())
-  update         DateTime    @default(now())
-  corporation    Corporation @relation(fields: [id_corporation], references: [id], onDelete: Cascade, onUpdate: Cascade)
-}
+
 
 model Trigger {
   id      Int      @id @default(autoincrement())

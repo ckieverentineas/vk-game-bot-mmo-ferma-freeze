@@ -16,8 +16,8 @@ export async function Main_Menu_Corporation(context: Context, user: User) {
         const member_counter: number = await prisma.user.count({ where: { id_corporation: user.id_corporation} })
         const leader = await prisma.user.findFirst({ where: { id: corporation.id_user } })
         event_logger +=`💬 Корпорация: ${corporation.name}-${corporation.id}\n🌐 Основатель: @id${leader?.idvk}(${leader?.name})\n📈 Уровень: ${corporation.lvl}\n📗 Опыт: ${corporation.xp.toFixed(2)}\n💰 Шекели: ${corporation.gold.toFixed(2)}\n⚡ Энергия: ${corporation.energy.toFixed(2)}\n🤝 Репутация: ${corporation.reputation.toFixed(2)}\n👥 Сотрудников: ${member_counter}/${corporation.member}\n`;
-        keyboard.callbackButton({ label: '🏛 Постройки', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
-        .callbackButton({ label: '👥 Сотрудники', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: '🏛 Постройки', payload: { command: 'builder_control_corporation', stat: "atk" }, color: 'secondary' })
+        .callbackButton({ label: '👥 Сотрудники', payload: { command: 'worker_control_corporation', stat: "health"  }, color: 'secondary' }).row()
     } else {
         event_logger = `💬 Вы еще не состоите в корпорации, напишите основать корпорацию [название корпорации] или в игровом чате отправьте ответ на сообщение !вступить`
     }
