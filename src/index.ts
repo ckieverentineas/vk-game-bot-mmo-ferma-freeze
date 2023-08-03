@@ -12,6 +12,7 @@ import { registerUserRoutes } from "./player";
 import { Rand_Int } from "./module/fab/random";
 import { Main_Menu_Corporation } from "./module/game/corporation/corporation";
 import { Builder_Control_Corporation, Builder_Controller_Corporation } from "./module/game/corporation/builder";
+import { Member_Control, Member_Controller } from "./module/game/corporation/member";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -127,6 +128,8 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"builder_controller": Builder_Controller,
 		"builder_control_corporation": Builder_Control_Corporation,
 		"builder_controller_corporation": Builder_Controller_Corporation,
+		"member_control": Member_Control,
+		"member_controller": Member_Controller,
 		"worker_control": Worker_Control,
 		"worker_controller": Worker_Controller,
 		"income_control": Income_Control,

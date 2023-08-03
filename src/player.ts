@@ -22,9 +22,9 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         let user_me = null
         for (const user of await prisma.analyzer.findMany({ orderBy: { energy: 'desc' }, include: { user: true } })) {
             if (counter <= 10) {
-                users += `${counter} - ${user.user.name.slice(0, 20)} --> ${user.energy.toFixed(2)}⚡\n`
+                users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡\n`
             }
-            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - @id${user.user.idvk}(${user.user.name.slice(0, 20)}) --> ${user.energy.toFixed(2)}⚡`}
+            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡`}
             counter++
         }
         /*const text = [
@@ -58,9 +58,9 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         let user_me = null
         for (const user of await prisma.analyzer.findMany({ orderBy: { gold: 'desc' }, include: { user: true } })) {
             if (counter <= 10) {
-                users += `${counter} - ${user.user.name.slice(0, 20)} --> ${user.gold.toFixed(2)}💰\n`
+                users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰\n`
             }
-            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - @id${user.user.idvk}(${user.user.name.slice(0, 20)}) --> ${user.gold.toFixed(2)}💰`}
+            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰`}
             counter++
         }
         users += user_me

@@ -65,11 +65,12 @@ export async function Income_Control(context: Context, user: User) {
                 prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } }),
                 prisma.user.update({ where: { id: user.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef+income_gold_bonus*koef } } }),
                 prisma.analyzer.update({ where: { id: analyzer.id }, data: { energy: { increment: income_energy*koef }, gold: { increment: income_gold*koef+income_gold_bonus*koef } } }),
-                prisma.corporation.update({ where: { id: user.id_corporation }, data: { gold: { increment: income_gold_corporation }}})
-            ]).then(([, user_income]) => {
+                prisma.corporation.update({ where: { id: user.id_corporation }, data: { gold: { increment: income_gold_corporation*koef }}})
+            ]).then(([, user_income, , corp_upd]) => {
                 event_logger = `⌛ Работники предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии: ${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей: ${(income_gold*koef).toFixed(2)}(+${(income_gold_bonus*koef).toFixed(2)}), ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}` 
-                event_logger += `\n\n🌐 На счет корпорации ${corp.name} клонировано ${income_gold_corporation.toFixed(2)} шекелей`
+                event_logger += `\n\n🌐 На счет корпорации ${corp.name} клонировано ${(income_gold_corporation*koef).toFixed(2)} шекелей. Баланс корпорации поднялся с ${corp.gold.toFixed(2)} до ${corp_upd.gold.toFixed(2)}`
                 console.log(`⌛ Работники ${user.idvk} предоставили отчет:\n🏦 За прошедшее время прошло ${koef.toFixed(2)} часов, прибыль составила:\n\n⚡ Энергии:${(income_energy*koef).toFixed(2)}, ${user.energy.toFixed(2)} --> ${user_income.energy.toFixed(2)}\n💰 Шекелей:${(income_gold*koef).toFixed(2)}(+${income_gold_bonus.toFixed(2)}), ${user.gold.toFixed(2)} --> ${user_income.gold.toFixed(2)}`);
+                console.log(`🌐 На счет корпорации ${corp.name} клонировано ${(income_gold_corporation*koef).toFixed(2)} шекелей. Баланс корпорации поднялся с ${corp.gold.toFixed(2)} до ${corp_upd.gold.toFixed(2)}`)
             })
             .catch((error) => {
                 event_logger = `⌛ Произошла ошибка предоставления отчета о прибыли, попробуйте позже` 

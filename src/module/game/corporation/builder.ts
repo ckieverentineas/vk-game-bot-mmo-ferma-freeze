@@ -14,11 +14,16 @@ export async function Builder_Control_Corporation(context: Context, user: User) 
     let event_logger = `❄ Отдел управления постройками корпорации:\n\n`
     let cur = context.eventPayload.office_current ?? 0
     const builder = builder_list[cur]
+    const corp = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
+    const leader = await prisma.user.findFirst({ where: { id: corp?.id_user || 1 }})
     if (builder_list.length > 0) {
         const sel = buildin[builder.name]
         const lvl_new = builder.lvl+1
         const price_new = sel.price*(lvl_new**sel.koef_price)
-        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
+        
+        if (user.idvk == leader?.idvk) {
+            keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
+        }
         //.callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy_corporation', office_current: cur, target: builder.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} ${sel.income_description}: ${builder.income.toFixed(2)}%\n👥 Рабочих: ${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
@@ -35,7 +40,9 @@ export async function Builder_Control_Corporation(context: Context, user: User) 
         keyboard.callbackButton({ label: '→', payload: { command: 'builder_control_corporation', office_current: cur+1, target: builder.id }, color: 'secondary' })
     }
     //новый офис
-    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller_corporation', command_sub: 'builder_add_corporation' }, color: 'secondary' })
+    if (user.idvk == leader?.idvk) {
+        keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller_corporation', command_sub: 'builder_add_corporation' }, color: 'secondary' })
+    }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu_corporation' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
@@ -113,7 +120,7 @@ async function Builder_Upgrade_Corporation(context: Context, user: User, target:
             if (corp && corp.gold >= price_new) {
                 await prisma.$transaction([
                     prisma.corporation_Builder.update({ where: { id: builder.id }, data: { lvl: lvl_new, worker: worker_new, income: income_new, cost: { increment: price_new } } }),
-                    prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: price_new } } })
+                    prisma.corporation.update({ where: { id: user.id_corporation }, data: { gold: { decrement: price_new } } })
                 ]).then(([builder_up, user_up]) => {
                     event_logger = `⌛ Поздравляем с улучшением уровня корпоративного здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n🏦 На счете корпорации было ${corp.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_up.gold.toFixed(2)}` 
                     console.log(`⌛ Поздравляем ${corp.name} с улучшением корпоративного здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n🏦 На счете корпорации было ${corp.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_up.gold.toFixed(2)}`);
