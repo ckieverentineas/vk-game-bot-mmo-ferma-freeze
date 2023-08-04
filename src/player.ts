@@ -1,8 +1,9 @@
 import { HearManager } from "@vk-io/hear";
-import { chat_id, root, vk } from "./index";
+import { answerTimeLimit, chat_id, root, vk } from "./index";
 import { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { Analyzer, Corporation, User } from "@prisma/client";
+import { Keyboard } from "vk-io";
 
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
@@ -17,16 +18,80 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         }
     })
     hearManager.hear(/стата|Стата/gm, async (context: any) => {
-        let users = 'Рейтинг по добытой энергии\n\n'
-        let counter = 1
-        let user_me = null
-        for (const user of await prisma.analyzer.findMany({ orderBy: { energy: 'desc' }, include: { user: true } })) {
-            if (counter <= 10) {
-                users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡\n`
+        let stop = false
+        while (!stop) {
+            const answer: any = await context.question(`❄ Какая статистика вам нужна?`,
+            {	
+                keyboard: Keyboard.builder()
+                .textButton({ label: '⚡', payload: { command: 'energy' }, color: 'secondary' })
+                .textButton({ label: '💰', payload: { command: 'gold' }, color: 'secondary' })
+                .textButton({ label: '⭐', payload: { command: 'point' }, color: 'secondary' })
+                .textButton({ label: '⚙', payload: { command: 'global' }, color: 'secondary' })
+                .oneTime().inline(), answerTimeLimit
+            })
+            if (answer.isTimeout) { stop = true }
+            if (!answer.payload) {
+                stop = true
             }
-            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡`}
-            counter++
+            const config: any = {
+                'energy': Stat_Energy,
+                'gold': Stat_Gold,
+                'point': Stat_Point,
+                'global': Stat_Global
+            }
+            const ans = await config[answer.payload.command]()
+            await context.send(`${ans}`)
         }
+        async function Stat_Global() {
+            const player = await prisma.user.count()
+            const builder = await prisma.builder.count()
+            const corporation = await prisma.corporation.count()
+            const worker = await prisma.worker.count()
+            return `❄ FERma v 0.36:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
+        }
+        async function Stat_Energy() {
+            let users = '❄ Рейтинг по добытой энергии:\n\n'
+            let counter = 1
+            let user_me = null
+            for (const user of await prisma.analyzer.findMany({ orderBy: { energy: 'desc' }, include: { user: true } })) {
+                if (counter <= 10) {
+                    users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡\n`
+                }
+                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡`}
+                counter++
+            }
+            users += user_me
+            return `${users}`
+        }
+        async function Stat_Gold() {
+            let users = '❄ Рейтинг по добытым шекелям:\n\n'
+            let counter = 1
+            let user_me = null
+            for (const user of await prisma.analyzer.findMany({ orderBy: { gold: 'desc' }, include: { user: true } })) {
+                if (counter <= 10) {
+                    users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰\n`
+                }
+                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰`}
+                counter++
+            }
+            users += user_me
+            return `${users}`
+        }
+		async function Stat_Point() {
+            let users = '❄ Рейтинг по полученным очкам обучения:\n\n'
+            let counter = 1
+            let user_me = null
+            for (const user of await prisma.analyzer.findMany({ orderBy: { point: 'desc' }, include: { user: true } })) {
+                if (counter <= 10) {
+                    users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐\n`
+                }
+                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold}⭐`}
+                counter++
+            }
+            users += user_me
+            return `${users}`
+        }
+        
         /*const text = [
             { idvk: 1, id: 1, text: "Г", white: " " },
             { idvk: 12, id: 1, text: "ГИ", white: " " },
@@ -49,22 +114,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         }
         await context.send(res.map((item: { test: any; }) => {return item.test;}).join("\r\n"))
         //console.log(res.map((item: { test: any; }) => {return item.test;}).join("\r\n"))*/
-        users += user_me
-        await context.send(`${users}`)
-    })
-    hearManager.hear(/стат -g|Стат -g/gm, async (context: any) => {
-        let users = 'Рейтинг по добытым шекелям\n\n'
-        let counter = 1
-        let user_me = null
-        for (const user of await prisma.analyzer.findMany({ orderBy: { gold: 'desc' }, include: { user: true } })) {
-            if (counter <= 10) {
-                users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰\n`
-            }
-            if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰`}
-            counter++
-        }
-        users += user_me
-        await context.send(`${users}`)
+        
     })
     hearManager.hear(/осмотреть|Осмотреть/gm, async (context: any) => {
         if (context.forwards[0]?.senderId || context.replyMessage?.senderId) {
