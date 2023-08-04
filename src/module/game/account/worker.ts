@@ -79,7 +79,6 @@ async function Worker_Target(context: Context, user: User, target: number) {
         if (worker_checker < builder!.worker) {
             await prisma.$transaction([
                 prisma.worker.update({ where: { id: target }, data: { id_builder: id_build } }),
-                
             ]).then(([worker_upd]) => {
                 event_logger = `⌛ Рабочий ${worker_upd.name}-${worker_upd.id} теперь работает ${context.eventPayload.selector == 'zero' ? 'на Фрилансе' : `в здании ${builder?.name}-${builder?.id}`}.\n` 
                 console.log(`⌛ Рабочий игрока ${user.idvk} ${worker_upd.name}-${worker_upd.id} теперь работает в здании ${builder?.name}-${builder?.id}.`);
@@ -94,10 +93,25 @@ async function Worker_Target(context: Context, user: User, target: number) {
         
     } else {
         if (builder_list.length > 0) {
-            for (const builder of builder_list) {
-                const worker_checker: number = await prisma.worker.count({ where: { id_builder: builder.id } })
-                keyboard.callbackButton({ label: `✅ ${worker_checker}/${builder.worker}👥 ${builder.name}-${builder.id}`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: builder.id }, color: 'secondary' }).row()
-                event_logger += `💬 Здание: ${builder.name}-${builder.id}\n`;
+            const limiter = 5
+            const cur = context.eventPayload.office_current || 0
+            let counter = 0
+            for (let i=cur; cur < builder_list.length && counter < limiter; i++) {
+                const builder = builder_list[i]
+                if (i <= limiter) {
+                    const worker_checker: number = await prisma.worker.count({ where: { id_builder: builder.id } })
+                    keyboard.callbackButton({ label: `✅ ${worker_checker}/${builder.worker}👥 ${builder.name}-${builder.id}`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: builder.id }, color: 'secondary' }).row()
+                    event_logger += `💬 Здание: ${builder.name}-${builder.id}\n`;
+                }
+                counter++
+            }
+            //предыдущий офис
+            if (builder_list.length > limiter && cur > limiter-1) {
+                keyboard.callbackButton({ label: '←', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: cur-limiter, target: target }, color: 'secondary' })
+            }
+            //следующий офис
+            if (builder_list.length > limiter && cur < builder_list.length-1) {
+                keyboard.callbackButton({ label: '→', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: cur+limiter, target: target }, color: 'secondary' })
             }
             keyboard.callbackButton({ label: `❌ Фриланс`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: 0, target: target, selector: 'zero' }, color: 'secondary' })
         } else {
@@ -141,6 +155,7 @@ async function Worker_Upgrade(context: Context, user: User, target: number) {
     const keyboard = new KeyboardBuilder()
     const worker: Worker | null = await prisma.worker.findFirst({ where: { id_user: user.id, id: target }})
     let event_logger = `В данный момент рабочую силу нельзя улучшить...`
+    let cur = context.eventPayload.office_current ?? 0
     if (worker && worker.point > 0) {
         const selector = await Rand_Int(2)
 
@@ -162,7 +177,7 @@ async function Worker_Upgrade(context: Context, user: User, target: number) {
         event_logger += `\n У рабочего ${worker?.name} не хватает очков обучения. Очки обучения начисляются раз в день каждому рабочему в процессе сбора Прибыли.`
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: cur, target: undefined }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
@@ -191,7 +206,7 @@ async function Worker_Destroy(context: Context, user: User, target: number) {
         } 
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 

@@ -4,8 +4,8 @@ import { vk } from "../../..";
 import prisma from "../../prisma";
 
 const buildin: { [key: string]: { price: number, income: number, cost: number, koef_price: number, koef_income: number, type: string, smile: string, description: string, income_description: string } } = {
-    "Фабрикатор": { price: 500, income: 5, cost: 500, koef_price: 1.3838, koef_income: 0.0305, type: 'gold', smile: '💰', description: "Фабрикатор, секретная технология корпорации, позволяющая клонировать часть прибыли на шекельный счет корпорации", income_description: "Клонирование" },
-    "Банк": { price: 500, income: 5, cost: 500, koef_price: 1.3838, koef_income: 0.0305, type: 'gold', smile: '💰', description: "Банк, корпоративная финансовая система, при использовании которой вам возвращается часть налогов с прибыли", income_description: "Доход"  }
+    "Фабрикатор": { price: 500, income: 5, cost: 500, koef_price: 1.1, koef_income: 0.2, type: 'gold', smile: '💰', description: "Фабрикатор, секретная технология корпорации, позволяющая клонировать часть прибыли на шекельный счет корпорации", income_description: "Клонирование" },
+    "Банк": { price: 500, income: 5, cost: 500, koef_price: 1.1, koef_income: 0.2, type: 'gold', smile: '💰', description: "Банк, корпоративная финансовая система, при использовании которой вам возвращается часть налогов с прибыли", income_description: "Доход"  }
 }
 
 export async function Builder_Control_Corporation(context: Context, user: User) {

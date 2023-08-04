@@ -99,6 +99,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
     const keyboard = new KeyboardBuilder()
     const builder: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id: target }})
     let event_logger = `В данный момент здание нельзя улучшить...`
+    let cur = context.eventPayload.office_current ?? 0
     if (builder) {
         const sel = buildin[builder.name]
         const lvl_new = builder.lvl+1
@@ -124,11 +125,11 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
             }
         } else {
             event_logger = `Вы уверены, что хотите улучшить здание ${builder.name}-${builder.id} за ${price_new.toFixed(2)} при балансе ${user.gold.toFixed(2)}💰?\n\n Параметры вырастут следующим образом:\n${buildin[builder.name].smile} Прибыль: ${builder.income.toFixed(2)} --> ${income_new.toFixed(2)}\n👥 Рабочих: ${builder.worker} --> ${worker_new}\n`
-            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: 0, target: builder.id, status: "ok" }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, status: "ok" }, color: 'secondary' })
         } 
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: cur, target: undefined }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
@@ -158,7 +159,7 @@ async function Builder_Destroy(context: Context, user: User, target: number) {
         } 
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
