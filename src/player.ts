@@ -1,5 +1,5 @@
 import { HearManager } from "@vk-io/hear";
-import { answerTimeLimit, chat_id, root, vk } from "./index";
+import { answerTimeLimit, chat_id, group_id, root, vk } from "./index";
 import { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { Analyzer, Corporation, User } from "@prisma/client";
@@ -85,7 +85,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 if (counter <= 10) {
                     users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐\n`
                 }
-                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold}⭐`}
+                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐`}
                 counter++
             }
             users += user_me
@@ -232,7 +232,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             if ( !user_from || !user_to) { await context.send(`Вы или получатель шекелей не зарегестрированы!`); return }
             if ( user_from?.idvk == user_to?.idvk) { await context.send(`Самому себе нельзя передавать!`); return }
             const [cmd, value, action] = context.text.split(' ');
-            const operation_list = ['шекелей', 'шекели', 'шекель']
+            const operation_list = ['шекелей', 'шекели', 'шекель', 'шекеля']
             if (operation_list.includes(action) && parseFloat(value) > 0 && user_from && user_to && parseFloat(value) <= user_from.gold) {
                 let analyzer_from: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user_from.id } })
                 if (!analyzer_from) { analyzer_from = await prisma.analyzer.create({ data: { id_user: user_from.id } }) }
@@ -259,24 +259,23 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         }
     })
     hearManager.hear(/основать корпорацию/gm, async (context: any) => {
-        if (context.peerType == 'chat') {
-            const user: User | null = await prisma.user.findFirst({ where: { idvk: context.senderId } })
-            if (user) {
-                const corporation_check: Corporation | null = await prisma.corporation.findFirst({ where: { id: Number(user.id_corporation) } })
-                if (corporation_check) {
-                    await context.send(`Вы уже состоите в корпорации ${corporation_check.name}`)
-                    return
-                } else {
-                    const name_corp = context.text.replace('основать корпорацию ', '')
-                    if (name_corp.length < 3 || name_corp.length >= 100 ) { await context.send(`Длина названия корпорации не должна быть меньше 3 символов и больше 100 символов`); return }
-                    const name_check = await prisma.corporation.findFirst({ where: { name: name_corp } })
-                    if (name_check) { await context.send(`Корпорация с таким названием уже существует`); return }
-                    const corp = await prisma.corporation.create({ data: { name: name_corp, id_user: user.id }})
-                    if (corp) {
-                        await prisma.user.update({ where: { id: user.id }, data: { id_corporation: corp.id}})
-                        console.log(`Поздравляем с выходом на мировую арену новой корпорации: ${corp.name}`);
-                        context.send(`Поздравляем с выходом на мировую арену новой корпорации: ${corp.name}`)
-                    }
+        const user: User | null = await prisma.user.findFirst({ where: { idvk: context.senderId } })
+        if (user) {
+            const corporation_check: Corporation | null = await prisma.corporation.findFirst({ where: { id: Number(user.id_corporation) } })
+            if (corporation_check) {
+                await context.send(`Вы уже состоите в корпорации ${corporation_check.name}`)
+                return
+            } else {
+                const name_corp = context.text.replace('основать корпорацию ', '')
+                if (name_corp.length < 3 || name_corp.length >= 100 ) { await context.send(`Длина названия корпорации не должна быть меньше 3 символов и больше 100 символов`); return }
+                const name_check = await prisma.corporation.findFirst({ where: { name: name_corp } })
+                if (name_check) { await context.send(`Корпорация с таким названием уже существует`); return }
+                const corp = await prisma.corporation.create({ data: { name: name_corp, id_user: user.id }})
+                if (corp) {
+                    await prisma.user.update({ where: { id: user.id }, data: { id_corporation: corp.id}})
+                    console.log(`Поздравляем с выходом на мировую арену новой корпорации: ${corp.name}`);
+                    await context.send(`Поздравляем с выходом на мировую арену новой корпорации: ${corp.name}`)
+                    await vk.api.messages.send({ peer_id: chat_id, random_id: 0, message: `Поздравляем с выходом на мировую арену новой корпорации: ${corp.name}` })
                 }
             }
         }
@@ -317,5 +316,10 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             }
             await context.send(`${event_logger}`)
         }
+    })
+    hearManager.hear(/!босс|!Босс/gm, async (context: any) => {
+        console.log(context)
+        const test = await vk.api.wall.post({ owner_id: -group_id, message: "test boss"})
+        console.log(test)
     })
 }
