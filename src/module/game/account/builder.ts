@@ -10,7 +10,7 @@ const buildin: { [key: string]: { price: number, income: number, cost: number, k
 
 export async function Builder_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
+    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id }, orderBy: { lvl: "asc" } })
     let event_logger = `❄ Отдел управления сооружениями:\n\n`
     let cur = context.eventPayload.office_current ?? 0
     const builder = builder_list[cur]
@@ -25,14 +25,23 @@ export async function Builder_Control(context: Context, user: User) {
     } else {
         event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
     }
-    
+    //следующий офис
+    if (builder_list.length > 1 && cur < builder_list.length-1) {
+        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id }, color: 'secondary' })
+    }
     //предыдущий офис
     if (builder_list.length > 1 && cur > 0) {
         keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', office_current: cur-1, target: builder.id }, color: 'secondary' })
     }
-    //следующий офис
-    if (builder_list.length > 1 && cur < builder_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id }, color: 'secondary' })
+    
+    if (builder_list.length > 5) {
+        if ( cur < builder_list.length/2) {
+            //последний офис
+            keyboard.callbackButton({ label: '→🕯', payload: { command: 'builder_control', office_current: builder_list.length-1, target: builder.id }, color: 'secondary' })
+        } else {
+            //первый офис
+            keyboard.callbackButton({ label: '←🕯', payload: { command: 'builder_control', office_current: 0, target: builder.id }, color: 'secondary' })
+        }
     }
     //новый офис
     keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add' }, color: 'secondary' })

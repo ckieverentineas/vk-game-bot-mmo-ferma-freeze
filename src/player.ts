@@ -29,18 +29,23 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 .textButton({ label: '⚙', payload: { command: 'global' }, color: 'secondary' })
                 .oneTime().inline(), answerTimeLimit
             })
-            if (answer.isTimeout) { stop = true }
-            if (!answer.payload) {
-                stop = true
+            try {
+                if (answer.isTimeout) { stop = true }
+                if (!answer.payload) {
+                    stop = true
+                }
+                const config: any = {
+                    'energy': Stat_Energy,
+                    'gold': Stat_Gold,
+                    'point': Stat_Point,
+                    'global': Stat_Global
+                }
+                const ans = await config[answer.payload.command]()
+                await context.send(`${ans}`)
+            } catch (e) {
+                console.log(e)
+                return
             }
-            const config: any = {
-                'energy': Stat_Energy,
-                'gold': Stat_Gold,
-                'point': Stat_Point,
-                'global': Stat_Global
-            }
-            const ans = await config[answer.payload.command]()
-            await context.send(`${ans}`)
         }
         async function Stat_Global() {
             const player = await prisma.user.count()
