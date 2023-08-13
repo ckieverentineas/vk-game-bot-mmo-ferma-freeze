@@ -17,6 +17,7 @@ model User {
   energy          Float      @default(0)
   reputation      Float      @default(0)
   status          String     @default("player")
+  limiter         Int        @default(0)
   id_corporation  Int        @default(0)
   crdate          DateTime   @default(now())
   update          DateTime   @default(now())

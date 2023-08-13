@@ -7,7 +7,7 @@ import { Main_Menu, Main_Menu_Close, User_Menu_Show } from "./module/game/accoun
 import { Builder_Control, Builder_Controller } from "./module/game/account/builder";
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
-import { Exchange_Control, Income_Control, Sleep } from "./module/game/account/service";
+import { Exchange_Control, Income_Control, Send_Message, Sleep } from "./module/game/account/service";
 import { registerUserRoutes } from "./player";
 import { Rand_Int } from "./module/fab/random";
 import { Main_Menu_Corporation } from "./module/game/corporation/corporation";
@@ -117,6 +117,13 @@ vk.updates.on('wall_post_new', async (context: Context, next: any) => {
 })
 vk.updates.on('message_event', async (context: Context, next: any) => { 
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
+	await prisma.user.update({ where: { id: user.id }, data: { limiter: { increment: 1 } } })
+	if (user.limiter >= 100) {
+		await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
+		await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
+		await Sleep(420000)
+		await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
+	}
 	if (user.status == "banned") { return await next() }
 	//await Sleep(4000)
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)

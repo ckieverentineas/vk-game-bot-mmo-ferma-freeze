@@ -12,7 +12,7 @@ export async function Member_Control(context: Context, user: User) {
     const corp = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
     const leader = await prisma.user.findFirst({ where: { id: corp?.id_user || 1 }})
     if (member_list.length > 0) {
-        if (user.idvk == leader?.idvk) {
+        if (user.idvk == leader?.idvk || member.idvk == context.peerId) {
             keyboard.callbackButton({ label: '💥 Уволить', payload: { command: 'member_controller', command_sub: 'member_destroy', office_current: cur, target: member.id }, color: 'secondary' }).row()
         }
         //.callbackButton({ label: '👀', payload: { command: 'worker_controller', command_sub: 'worker_open', office_current: i, target: worker.id }, color: 'secondary' }).row()

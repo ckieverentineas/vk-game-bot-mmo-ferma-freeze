@@ -20,13 +20,15 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
     hearManager.hear(/стата|Стата/gm, async (context: any) => {
         let stop = false
         while (!stop) {
-            const answer: any = await context.question(`❄ Какая статистика вам нужна?`,
+            const answer: any = await context.question(`❄ Какая статистика вам нужна? Клавиатура доступна в течение пяти минут!`,
             {	
                 keyboard: Keyboard.builder()
                 .textButton({ label: '⚡', payload: { command: 'energy' }, color: 'secondary' })
                 .textButton({ label: '💰', payload: { command: 'gold' }, color: 'secondary' })
                 .textButton({ label: '⭐', payload: { command: 'point' }, color: 'secondary' })
                 .textButton({ label: '⚙', payload: { command: 'global' }, color: 'secondary' })
+                .textButton({ label: '🌐', payload: { command: 'corp' }, color: 'secondary' }).row()
+                .textButton({ label: 'ОК', payload: { command: 'stop' }, color: 'secondary' })
                 .oneTime().inline(), answerTimeLimit
             })
             try {
@@ -38,9 +40,15 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                     'energy': Stat_Energy,
                     'gold': Stat_Gold,
                     'point': Stat_Point,
-                    'global': Stat_Global
+                    'global': Stat_Global,
+                    'corp': Stat_Corp,
+                    'stop': Stat_Stop
                 }
                 const ans = await config[answer.payload.command]()
+                if (ans == 'stop') {
+                    stop = true
+                    await context.send('Выдача статистики остановлена')
+                }
                 await context.send(`${ans}`)
             } catch (e) {
                 console.log(e)
@@ -52,49 +60,87 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             const builder = await prisma.builder.count()
             const corporation = await prisma.corporation.count()
             const worker = await prisma.worker.count()
-            return `❄ FERma v 0.36:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
+            return `❄ FERma v 0.39:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
+        }
+        async function Stat_Stop() {
+            return `stop`
         }
         async function Stat_Energy() {
             let users = '❄ Рейтинг по добытой энергии:\n\n'
             let counter = 1
-            let user_me = null
             for (const user of await prisma.analyzer.findMany({ orderBy: { energy: 'desc' }, include: { user: true } })) {
                 if (counter <= 10) {
-                    users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡\n`
+                    users += `${user.user.idvk == context.senderId ? '✅' : '👤'} ${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡\n`
+                } else {
+                    if (user.user.idvk == context.senderId) {
+                        users += `\n✅ ${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡`
+                    }
                 }
-                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.energy.toFixed(2)}⚡`}
                 counter++
             }
-            users += user_me
             return `${users}`
         }
         async function Stat_Gold() {
             let users = '❄ Рейтинг по добытым шекелям:\n\n'
             let counter = 1
-            let user_me = null
             for (const user of await prisma.analyzer.findMany({ orderBy: { gold: 'desc' }, include: { user: true } })) {
                 if (counter <= 10) {
-                    users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰\n`
+                    users += `${user.user.idvk == context.senderId ? '✅' : '👤'} ${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰\n`
+                } else {
+                    if (user.user.idvk == context.senderId) {
+                        users += `\n✅ ${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰`
+                    }
                 }
-                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.gold.toFixed(2)}💰`}
                 counter++
             }
-            users += user_me
             return `${users}`
         }
 		async function Stat_Point() {
             let users = '❄ Рейтинг по полученным очкам обучения:\n\n'
             let counter = 1
-            let user_me = null
             for (const user of await prisma.analyzer.findMany({ orderBy: { point: 'desc' }, include: { user: true } })) {
                 if (counter <= 10) {
-                    users += `${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐\n`
+                    users += `${user.user.idvk == context.senderId ? '✅' : '👤'} ${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐\n`
+                } else {
+                    if (user.user.idvk == context.senderId) {
+                        users += `\n✅ ${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐`
+                    }
                 }
-                if (user.user.idvk == context.senderId) { user_me = `\n${counter} - [https://vk.com/id${user.user.idvk}|${user.user.name.slice(0, 20)}] --> ${user.point}⭐`}
                 counter++
             }
-            users += user_me
             return `${users}`
+        }
+        async function Stat_Corp() {
+            const corps = []
+            let event_logger = '❄ Рейтинг по корпорациям:\n\n'
+            for (const corp of await prisma.corporation.findMany({ orderBy: { crdate: 'asc' } })) {
+                const users_counter = await prisma.user.count({ where: { id_corporation: corp.id } })
+                if (users_counter > 0) {
+                    const lvls = await prisma.corporation_Builder.findMany({ where: { id_corporation: corp.id } })
+                    const lvls_sum = lvls.map(builder => `🏛 ${builder.name} --> ${builder.lvl}📈\n`).join('')
+                    const score: number = lvls.reduce((x,y) => x + y.lvl, 0)
+                    corps.push({ id: corp.id, name: corp.name, members: `${users_counter}/${corp.member}👥`, builders: lvls_sum, score: score })
+                }
+            }
+            corps.sort(function(a, b){
+                return a.score - b.score;
+            });
+            let counter = 1
+            let corp_me = ''
+            const user = await prisma.user.findFirst({ where: { idvk: context.senderId}})
+            for (const cor of corps) {
+                if ( counter < 10) {
+                    event_logger += `${cor.id == user?.id_corporation ? '✅' : '🌐'} ${counter} - ${cor.name} ${cor.members}\n ${cor.builders}\n\n`
+                } else {
+                    if (cor.id == user?.id_corporation) {
+                        corp_me = `✅ ${counter} - ${cor.name} ${cor.members}\n ${cor.builders}\n\n`
+                    }
+                }
+                
+                counter++
+            }
+            event_logger += `\n\n\n\n\n\n${corp_me}`
+            return `${event_logger}`
         }
         
         /*const text = [
