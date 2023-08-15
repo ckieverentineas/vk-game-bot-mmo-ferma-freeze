@@ -14,6 +14,7 @@ model User {
   lvl             Int        @default(1)
   xp              Float      @default(0)
   gold            Float      @default(350)
+  crystal         Int        @default(0)
   energy          Float      @default(0)
   reputation      Float      @default(0)
   status          String     @default("player")
@@ -31,12 +32,10 @@ model Builder {
   id      Int      @id @default(autoincrement())
   name    String
   lvl     Int      @default(1)
-  xp      Float    @default(0)
   type    String   @default("energy")
   income  Float    @default(1)
   cost    Float    @default(100)
   worker  Int      @default(1)
-  count   Int      @default(1)
   id_user Int
   crdate  DateTime @default(now())
   update  DateTime @default(now())
@@ -46,7 +45,6 @@ model Corporation_Builder {
   id             Int         @id @default(autoincrement())
   name           String
   lvl            Int         @default(1)
-  xp             Float       @default(0)
   type           String
   income  Float    @default(1)
   cost    Float    @default(100)

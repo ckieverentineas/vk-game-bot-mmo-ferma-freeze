@@ -26,7 +26,7 @@ export async function Builder_Control_Corporation(context: Context, user: User) 
         }
         //.callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy_corporation', office_current: cur, target: builder.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
-        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n📗 Опыт: ${builder.xp.toFixed(2)}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} ${sel.income_description}: ${builder.income.toFixed(2)}%\n👥 Рабочих: ${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
+        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} ${sel.income_description}: ${builder.income.toFixed(2)}%\n👥 Рабочих: ${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не построили корпоративные здания, как насчет что-то построить??`
     }

@@ -13,6 +13,7 @@ import { Rand_Int } from "./module/fab/random";
 import { Main_Menu_Corporation } from "./module/game/corporation/corporation";
 import { Builder_Control_Corporation, Builder_Controller_Corporation } from "./module/game/corporation/builder";
 import { Member_Control, Member_Controller } from "./module/game/corporation/member";
+import { Trigger } from "@prisma/client";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -115,14 +116,23 @@ vk.updates.on('wall_post_new', async (context: Context, next: any) => {
 	}
 	return await next();
 })
-vk.updates.on('message_event', async (context: Context, next: any) => { 
+vk.updates.on('message_event', async (context: Context, next: any) => {
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
 	await prisma.user.update({ where: { id: user.id }, data: { limiter: { increment: 1 } } })
-	if (user.limiter >= 100) {
-		await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
+	let trigger: Trigger | null = await prisma.trigger.findFirst({ where: { id_user: user.id, name: 'antiflud' } })
+    if (!trigger) { 
+        trigger = await prisma.trigger.create({ data: { id_user: user.id, name: 'antiflud', value: false } })
+        console.log(`Init antiflud for user ${context.peerId}`)
+    }
+    const datenow: Date = new Date()
+	const dateold: Date = new Date(trigger!.update)
+	if (user.limiter >= 100 || (Number(datenow) - Number(dateold)) > 600000 ) {
 		await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
-		await Sleep(420000)
-		await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
+		if (user.limiter >= 100) {
+			await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
+			await Sleep(420000)
+			await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
+		}
 	}
 	if (user.status == "banned") { return await next() }
 	//await Sleep(4000)

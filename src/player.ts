@@ -44,11 +44,8 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                     'corp': Stat_Corp,
                     'stop': Stat_Stop
                 }
-                const ans = await config[answer.payload.command]()
-                if (ans == 'stop') {
-                    stop = true
-                    await context.send('Выдача статистики остановлена')
-                }
+                let ans = await config[answer.payload.command]()
+                if (ans == 'stop') { stop = true; ans = `Выдача статистики остановлена` }
                 await context.send(`${ans}`)
             } catch (e) {
                 console.log(e)
@@ -123,7 +120,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 }
             }
             corps.sort(function(a, b){
-                return a.score - b.score;
+                return b.score - a.score;
             });
             let counter = 1
             let corp_me = ''

@@ -56,7 +56,7 @@ export async function Income_Control(context: Context, user: User) {
             }
         }
         const dateold: Date = new Date(trigger.update)
-        const koef: number = (Number(datenow) - Number(dateold))/3600000
+        const koef: number = (Number(datenow) - Number(dateold))/3600000 < 24 ? (Number(datenow) - Number(dateold))/3600000 : 24
         let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
         if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
         
