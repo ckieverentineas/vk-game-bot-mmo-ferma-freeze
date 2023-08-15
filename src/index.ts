@@ -10,7 +10,7 @@ import { Worker_Control, Worker_Controller } from "./module/game/account/worker"
 import { Exchange_Control, Income_Control, Send_Message, Sleep } from "./module/game/account/service";
 import { registerUserRoutes } from "./player";
 import { Rand_Int } from "./module/fab/random";
-import { Main_Menu_Corporation } from "./module/game/corporation/corporation";
+import { Corporation_Controller, Main_Menu_Corporation } from "./module/game/corporation/corporation";
 import { Builder_Control_Corporation, Builder_Controller_Corporation } from "./module/game/corporation/builder";
 import { Member_Control, Member_Controller } from "./module/game/corporation/member";
 import { Trigger } from "@prisma/client";
@@ -143,6 +143,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"main_menu_corporation": Main_Menu_Corporation,
 		"builder_control": Builder_Control,
 		"builder_controller": Builder_Controller,
+		"corporation_controller": Corporation_Controller,
 		"builder_control_corporation": Builder_Control_Corporation,
 		"builder_controller_corporation": Builder_Controller_Corporation,
 		"member_control": Member_Control,

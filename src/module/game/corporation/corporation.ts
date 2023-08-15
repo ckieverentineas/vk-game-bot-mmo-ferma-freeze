@@ -2,6 +2,7 @@ import { User, Builder, Corporation } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
+import { Send_Message } from "../account/service";
 
 const buildin: { [key: string]: { price: number, income: number, cost: number, koef_price: number, koef_income: number, type: string, smile: string, description: string } } = {
     "Офис": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'gold', smile: '💰', description: "Офис является штабом вашего бизнеса и фискирует прибыль в шекелях" },
@@ -19,18 +20,20 @@ export async function Main_Menu_Corporation(context: Context, user: User) {
         keyboard.callbackButton({ label: '🏛 Постройки', payload: { command: 'builder_control_corporation', stat: "atk" }, color: 'secondary' })
         .callbackButton({ label: '👥 Сотрудники', payload: { command: 'member_control', stat: "health"  }, color: 'secondary' }).row()
     } else {
-        event_logger = `💬 Вы еще не состоите в корпорации, напишите основать корпорацию [название корпорации] или в игровом чате отправьте ответ на сообщение !вступить`
+        keyboard//.callbackButton({ label: '➕ Основать корпорацию', payload: { command: 'corporation_controller', command_sub: 'corporation_add' }, color: 'secondary' }).row()
+        .callbackButton({ label: '🔎 Быстрый поиск', payload: { command: 'corporation_controller', command_sub: 'corporation_finder' }, color: 'secondary' })
+        event_logger = `💬 Вы еще не состоите в корпорации, как насчет основать свою или присоединится к существующей!\nЕсли хотите основать собственную, напишите основать корпорацию [название корпорации]`
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
-export async function Builder_Controller(context: Context, user: User) {
+export async function Corporation_Controller(context: Context, user: User) {
     const target = context.eventPayload.target ?? 0
     const config: Office_Controller = {
-        'builder_add': Builder_Add,
-        'builder_upgrade': Builder_Upgrade, 
+        'corporation_add': Corporation_Add,
+        'corporation_finder': Corporation_Finder, 
         'builder_config': Office_Config,
         'builder_destroy': Builder_Destroy,
         'builder_open': Office_Open
@@ -42,78 +45,70 @@ type Office_Controller = {
     [key: string]: (context: Context, user: User, target: number) => Promise<void>;
 }
 
-async function Builder_Add(context: Context, user: User, target: number) {
+async function Corporation_Add() { }
+async function Corporation_Finder(context: Context, user: User, target: number) {
+    //let attached = await Image_Random(context, "beer")
+    const corporation_list: Corporation[] = await prisma.corporation.findMany({ orderBy: { id: "desc" } })
     const keyboard = new KeyboardBuilder()
-    let event_logger = `❄ Выберите новое здание для стройки:\n\n`
-    if (context.eventPayload.selector) {
-        const sel = buildin[context.eventPayload.selector]
-        const lvl_new = 1
-        const price_new = sel.price*(lvl_new**sel.koef_price)
-        const worker_new = lvl_new/10 >= 1 ? Math.floor(lvl_new/10) : 1
-        const income_new = sel.income*(lvl_new**sel.koef_income)
-        if (user.gold >= price_new) {
-            await prisma.$transaction([
-                prisma.builder.create({ data: { id_user: user.id, name: context.eventPayload.selector, income: income_new, worker: worker_new, cost: price_new, type: sel.type } }),
-                prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: price_new } } })
-            ]).then(([builder_new, user_pay]) => {
-                event_logger = `⌛ Поздравляем с приобритением ${builder_new.name}-${builder_new.id}.\n🏦 На вашем счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_pay.gold.toFixed(2)}` 
-                console.log(`⌛ Поздравляем ${user.idvk} с приобритением ${builder_new.name}-${builder_new.id}.\n🏦 На его/ее счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_pay.gold.toFixed(2)}`);
-            })
-            .catch((error) => {
-                event_logger = `⌛ Произошла ошибка приобретения нового здания, попробуйте позже` 
-                console.error(`Ошибка: ${error.message}`);
-            });
+    let event_logger = `❄ Выберите корпорацию к которой хотели бы присоединиться: \n\n`
+    const curva = context.eventPayload.office_current || 0
+    const cur = context.eventPayload.target_current || 0
+    if (context.eventPayload.selector || context.eventPayload.selector == 'zero') {
+        const corporation_check: Corporation | null = await prisma.corporation.findFirst({ where: { id: Number(context.eventPayload.selector) } })
+        if (!corporation_check) {
+            await vk.api.messages.send({ peer_id: user.idvk, random_id: 0, message: `Корпорации не существует!` })
+            return
         } else {
-            event_logger = `⌛ На вашем банковском счете недостает ${(price_new-user.gold).toFixed(2)} шекелей для постройки нового здания.`
-        }
-    } else {
-        for (const builder of ['Офис', 'Электростанция']) {
-            const sel = buildin[builder]
-            const lvl_new = 1
-            const price_new = sel.price*(lvl_new**sel.koef_price)
-            keyboard.callbackButton({ label: `➕ ${builder} ${price_new}💰`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target: target, selector: builder }, color: 'secondary' }).row()
-            event_logger += `\n\n💬 Здание: ${builder}\n${buildin[builder].smile} Прибыль: ${sel.income.toFixed(2)} в час\n ${sel.description}`;
-        }
-    }
-    //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
-}
-
-async function Builder_Upgrade(context: Context, user: User, target: number) {
-    const keyboard = new KeyboardBuilder()
-    const builder: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id: target }})
-    let event_logger = `В данный момент здание нельзя улучшить...`
-    if (builder) {
-        const sel = buildin[builder.name]
-        const lvl_new = builder.lvl+1
-        const price_new = sel.price*(lvl_new**sel.koef_price)
-        const worker_new = lvl_new/10 >= 1 ? Math.floor(lvl_new/10) : 1
-        const income_new = sel.income*(lvl_new**sel.koef_income)
-        if (context.eventPayload.status == "ok") {
-            if (user.gold >= price_new) {
+            const corporation_check_to: Corporation | null = await prisma.corporation.findFirst({ where: { id: Number(user.id_corporation) } })
+            console.log(corporation_check_to)
+            if (!corporation_check_to && await prisma.user.count({ where: { id_corporation: corporation_check.id } }) < corporation_check.member ) {
                 await prisma.$transaction([
-                    prisma.builder.update({ where: { id: builder.id }, data: { lvl: lvl_new, worker: worker_new, income: income_new, cost: { increment: price_new } } }),
-                    prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: price_new } } })
-                ]).then(([builder_up, user_up]) => {
-                    event_logger = `⌛ Поздравляем с улучшением уровня здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n🏦 На вашем счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_up.gold.toFixed(2)}` 
-                    console.log(`⌛ Поздравляем ${user.idvk} с улучшением здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n🏦 На его/ее счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_up.gold.toFixed(2)}`);
-                    //keyboard.callbackButton({ label: '👀', payload: { command: 'office', office_current: context.eventPayload.office_current, target: office_upgrade.id }, color: 'secondary' })
+                    prisma.user.update({ where: { id: user.id }, data: { id_corporation: corporation_check.id } }),
+                    prisma.user.findFirst({ where: { id: corporation_check.id_user } })
+                ]).then(([user_change_corp, owner]) => {
+                    if (user_change_corp) {
+                        event_logger += `Вы вступили в корпорацию ${corporation_check.name}`
+                        console.log(`${user.idvk} вступил в корпорацию ${corporation_check.name}`);
+                        Send_Message(owner!.idvk, `@id${user.idvk}(${user.name}) вступает к вам в корпорацию!`)
+                    }
                 })
                 .catch((error) => {
-                    event_logger = `⌛ Произошла ошибка прокачки здания, попробуйте позже` 
+                    event_logger += `Ошибка при вступлении в корпорацию, попробуйте позже`
                     console.error(`Ошибка: ${error.message}`);
                 });
             } else {
-                event_logger += `\n На вашем банковском счете недостает ${(price_new-user.gold).toFixed(2)} шекелей.`
+                await vk.api.messages.send({ peer_id: user.idvk, random_id: 0, message: `В корпорации нет места для новых участников или игрок не состоит в корпорации!` })
+            }
+        }
+        //await context.send(`${event_logger}`)
+    } else {
+        if (corporation_list.length > 0) {
+            const limiter = 5
+            let counter = 0
+            for (let i=cur; i < corporation_list.length && counter < limiter; i++) {
+                const corpa = corporation_list[i]
+                //console.log(`cur: ${cur} i: ${i} counter: ${counter} ${JSON.stringify(builder)}`)
+                const member_checker: number = await prisma.user.count({ where: { id_corporation: corpa.id } })
+                if (counter < limiter && member_checker < corpa.member && member_checker > 0) {
+                    keyboard.callbackButton({ label: `✅ ${member_checker}/${corpa.member}👥 ${corpa.name}-${corpa.id}`, payload: { command: 'corporation_controller', command_sub: 'corporation_finder', office_current: curva, target_current: cur, target: target, selector: corpa.id }, color: 'secondary' }).row()
+                    event_logger += `💬 Корпорация: ${corpa.name}-${corpa.id}\n`;
+                    counter++
+                }
+            }
+            event_logger += `\n\n${corporation_list.length > 1 ? `~~~~ ${cur + corporation_list.length > cur+limiter ? limiter : limiter-(corporation_list.length-cur)} из ${corporation_list.length} ~~~~` : ''}`
+            //предыдущий офис
+            if (corporation_list.length > limiter && cur > limiter-1) {
+                keyboard.callbackButton({ label: '←', payload: { command: 'corporation_controller', command_sub: 'corporation_finder', office_current: curva, target_current: cur-limiter, target: target }, color: 'secondary' })
+            }
+            //следующий офис
+            if (corporation_list.length > limiter && cur < corporation_list.length-1) {
+                keyboard.callbackButton({ label: '→', payload: { command: 'corporation_controller', command_sub: 'corporation_finder', office_current: curva, target_current: cur+limiter, target: target }, color: 'secondary' })
             }
         } else {
-            event_logger = `Вы уверены, что хотите улучшить здание ${builder.name}-${builder.id} за ${price_new.toFixed(2)} при балансе ${user.gold.toFixed(2)}💰?\n\n Параметры вырастут следующим образом:\n${buildin[builder.name].smile} Прибыль: ${builder.income.toFixed(2)} --> ${income_new.toFixed(2)}\n👥 Рабочих: ${builder.worker} --> ${worker_new}\n`
-            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: 0, target: builder.id, status: "ok" }, color: 'secondary' })
-        } 
+            event_logger = `В данный момент нет доступных целей...`
+        }   
     }
-    //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu_corporation', office_current: curva, target_current: cur, target: target }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
