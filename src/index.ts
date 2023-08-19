@@ -14,6 +14,7 @@ import { Corporation_Controller, Main_Menu_Corporation } from "./module/game/cor
 import { Builder_Control_Corporation, Builder_Controller_Corporation } from "./module/game/corporation/builder";
 import { Member_Control, Member_Controller } from "./module/game/corporation/member";
 import { Trigger } from "@prisma/client";
+import { Planet_Control, Planet_Controller } from "./module/game/planet";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -128,6 +129,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	const dateold: Date = new Date(trigger!.update)
 	if (user.limiter >= 100 || (Number(datenow) - Number(dateold)) > 600000 ) {
 		await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
+		await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
 		if (user.limiter >= 100) {
 			await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
 			await Sleep(420000)
@@ -146,6 +148,8 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"corporation_controller": Corporation_Controller,
 		"builder_control_corporation": Builder_Control_Corporation,
 		"builder_controller_corporation": Builder_Controller_Corporation,
+		"planet_control": Planet_Control,
+		"planet_controller": Planet_Controller,
 		"member_control": Member_Control,
 		"member_controller": Member_Controller,
 		"worker_control": Worker_Control,
