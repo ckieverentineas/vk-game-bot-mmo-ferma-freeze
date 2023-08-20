@@ -1,8 +1,8 @@
 import { User, Builder, Planet, System } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
-import { vk } from "../..";
-import prisma from "../prisma";
-import { Randomizer_Float } from "./service";
+import { vk } from "../../..";
+import prisma from "../../prisma";
+import { Randomizer_Float } from "../service";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
     "Планета": { price: 100000, koef_price: 10, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" }
@@ -18,7 +18,7 @@ export async function Planet_Control(context: Context, user: User) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_object: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
-		.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
+		//.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n⚱️ Артефактов: ${planet.artefact}\n🧈 Золотых слитков: ${planet.golden.toFixed(2)}\n🧈 Железных слитков: ${planet.iron.toFixed(2)}\n🏙 Угля: ${planet.coal.toFixed(2)}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
     } else {
