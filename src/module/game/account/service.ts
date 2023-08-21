@@ -2,6 +2,7 @@ import { User, Builder, Trigger, Analyzer, Corporation, Corporation_Builder } fr
 import { Context, Keyboard, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
+import { Rand_Int } from "../../../module/fab/random";
 
 export function Sleep(ms: number) {
     return new Promise((resolve) => {
@@ -34,8 +35,9 @@ export async function Income_Control(context: Context, user: User) {
         let income_gold = 0
         let income_gold_corporation = 0
         for (const builder of builders) {
-            income_gold += builder.type == "gold" ? builder.income : 0
-            income_energy += builder.type == "energy" ? builder.income : 0
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            income_gold += builder.type == "gold" ? builder.income*(worker_check/builder.worker) : 0
+            income_energy += builder.type == "energy" ? builder.income*(worker_check/builder.worker) : 0
             for (const worker of await prisma.worker.findMany({ where: { id_builder: builder.id } })) {
                 income_gold += builder.type == "gold" ? worker.income : 0
                 income_energy += builder.type == "energy" ? worker.income : 0
@@ -103,13 +105,19 @@ export async function Income_Control(context: Context, user: User) {
         let analyzer: Analyzer | null = await prisma.analyzer.findFirst({ where: { id_user: user.id } })
         if (!analyzer) { analyzer = await prisma.analyzer.create({ data: { id_user: user.id } }) }
         const worker_counter: number = await prisma.worker.count({ where: { id_user: user.id } })
+
+        const selector = await Rand_Int(2)
+
+        const speed_new = selector == 0 ? 0.001 : 0
+        const income_new = selector == 1 ? 0.1 : 0
         await prisma.$transaction([
             prisma.trigger.update({ where: { id: trigger_worker.id }, data: { update: datenow } }),
-            prisma.worker.updateMany({ where: { id_user: user.id }, data: { point: { increment: Math.floor(koef_week/timer_week) } } }),
+            prisma.worker.updateMany({ where: { id_user: user.id }, data: { income: { increment: income_new }, speed: { increment: speed_new } } }),
             prisma.analyzer.update({ where: { id: analyzer.id }, data: { point: { increment: Math.floor(koef_week/timer_week)*worker_counter } } })
         ]).then(() => {
-            event_logger += `\n\n⌛ Работники получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения` 
-            console.log(`⌛ Работники ${user.idvk} получили повышение:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней, все работники получили по ${Math.floor(koef_week/timer_week)} очков обучения`);
+            
+            event_logger += `\n\n⌛ Работники получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.1' }:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней.` 
+            console.log(`⌛ Работники ${user.idvk} получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.1' }:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней.`);
         })
         .catch((error) => {
             event_logger += `⌛ Произошла ошибка прокачки рабочих, попробуйте позже` 

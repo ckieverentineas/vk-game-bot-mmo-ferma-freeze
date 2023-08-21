@@ -12,8 +12,8 @@ export async function Builder_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Отдел управления сооружениями:\n\n`
     let cur = context.eventPayload.office_current ?? 0
-    let id_planet = context.eventPayload.id_planet ?? 0
-    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { lvl: "asc" } })
+    //let id_planet = context.eventPayload.id_planet ?? 0
+    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id }, orderBy: { lvl: "asc" } })
     const builder = builder_list[cur]
     if (builder_list.length > 0) {
         const sel = buildin[builder.name]
@@ -73,7 +73,8 @@ async function Builder_Add(context: Context, user: User, target: number) {
     if (context.eventPayload.selector) {
         const sel = buildin[context.eventPayload.selector]
         const lvl_new = 1
-        const price_new = sel.price*(lvl_new**sel.koef_price)
+        const count_builder = await prisma.builder.count({ where: { id_user: user.id, name: context.eventPayload.selector }})
+        const price_new = 100*(count_builder**0.7)
         const worker_new = lvl_new/10 >= 1 ? Math.floor(lvl_new/10) : 1
         const income_new = sel.income*(lvl_new**sel.koef_income)
         if (user.gold >= price_new) {
@@ -92,12 +93,16 @@ async function Builder_Add(context: Context, user: User, target: number) {
             event_logger = `⌛ На вашем банковском счете недостает ${(price_new-user.gold).toFixed(2)} шекелей для постройки нового здания.`
         }
     } else {
-        for (const builder of ['Офис', 'Электростанция']) {
-            const sel = buildin[builder]
-            const lvl_new = 1
-            const price_new = sel.price*(lvl_new**sel.koef_price)
-            keyboard.callbackButton({ label: `➕ ${builder} ${price_new}💰`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target: target, selector: builder }, color: 'secondary' }).row()
-            event_logger += `\n\n💬 Здание: ${builder}\n${buildin[builder].smile} Прибыль: ${sel.income.toFixed(2)} в час\n ${sel.description}`;
+        if (await prisma.builder.count({ where: { id_user: user.id }}) < 249) {
+            for (const builder of ['Офис', 'Электростанция']) {
+                const sel = buildin[builder]
+                const count_builder = await prisma.builder.count({ where: { id_user: user.id, name: builder }})
+                const price_new = 100*(count_builder**0.7)
+                keyboard.callbackButton({ label: `➕ ${builder} ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target: target, selector: builder }, color: 'secondary' }).row()
+                event_logger += `\n\n💬 Здание: ${builder}\n${buildin[builder].smile} Прибыль: ${sel.income.toFixed(2)} в час\n ${sel.description}`;
+            }
+        } else {
+            event_logger += `Вы достигли предела в 250 построек!`
         }
     }
     //назад хз куда
