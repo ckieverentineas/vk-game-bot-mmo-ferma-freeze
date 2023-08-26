@@ -22,19 +22,19 @@ export async function Builder_Control(context: Context, user: User) {
         keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
         .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
-        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
+        const worker_checker = await prisma.worker.count({ where: { id_builder: builder.id } })
+        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n💰 Вложено: ${builder.cost.toFixed(2)}\n${buildin[builder.name].smile} Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${worker_checker}/${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
-    }
-    //следующий офис
-    if (builder_list.length > 1 && cur < builder_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id }, color: 'secondary' })
     }
     //предыдущий офис
     if (builder_list.length > 1 && cur > 0) {
         keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', office_current: cur-1, target: builder.id }, color: 'secondary' })
     }
-    
+    //следующий офис
+    if (builder_list.length > 1 && cur < builder_list.length-1) {
+        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id }, color: 'secondary' })
+    }
     if (builder_list.length > 5) {
         if ( cur < builder_list.length/2) {
             //последний офис

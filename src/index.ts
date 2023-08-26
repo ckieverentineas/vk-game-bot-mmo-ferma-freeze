@@ -60,7 +60,7 @@ vk.updates.on('like_add', async (context: Context, next: any) => {
 	//console.log(context)
 	if (user_check ) {
 		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { gold: { increment: 100 } } })
-		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Вам начислено вознаграждение за лайк ${context.objectType} 100💰. Ваш баланс ${user_gift.gold.toFixed(2)}` })
+		await Send_Message(user_gift.idvk, `⚙ Вам начислено вознаграждение за лайк ${context.objectType} 100💰. Ваш баланс ${user_gift.gold.toFixed(2)}`)
 	}
 	return await next();
 })
@@ -71,7 +71,7 @@ vk.updates.on('like_remove', async (context: Context, next: any) => {
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
 	if (user_check) {
 		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { gold: { decrement: 100 } } })
-		await vk.api.messages.send({ peer_id: user_gift.idvk, random_id: 0, message: `⚙ Штраф за снятие лайка с ${context.objectType} 100💰. Ваш баланс ${user_gift.gold.toFixed(2)}` })
+		await Send_Message(user_gift.idvk, `⚙ Штраф за снятие лайка с ${context.objectType} 100💰. Ваш баланс ${user_gift.gold.toFixed(2)}`)
 	}
 	return await next();
 })

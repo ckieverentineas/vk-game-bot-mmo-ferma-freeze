@@ -6,7 +6,12 @@ import prisma from "../../prisma";
 export async function User_Menu_Show(context: Context, user: User) {
 	const keyboard = new KeyboardBuilder()
 	const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
-    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n💎 Шекрисели: ${user.crystal}\n`
+	let count_worker_req = 0
+	for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
+		count_worker_req += builder.worker
+	}
+	const count_worker_be = await prisma.worker.count({ where: { id_user: user.id } })
+    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Занято рабочих: ${count_worker_be}/${count_worker_req}\n`
     keyboard.callbackButton({ label: '🏛 Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
     .callbackButton({ label: '👥 Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
 	.callbackButton({ label: '📈 Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
@@ -26,7 +31,12 @@ export async function User_Menu_Show(context: Context, user: User) {
 export async function Main_Menu(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
 	const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
-    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n💎 Караты: ${user.crystal}\n`
+	let count_worker_req = 0
+	for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
+		count_worker_req += builder.worker
+	}
+	const count_worker_be = await prisma.worker.count({ where: { id_user: user.id } })
+    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Занято рабочих: ${count_worker_be}/${count_worker_req}\n`
     keyboard.callbackButton({ label: '🏛 Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
     .callbackButton({ label: '👥 Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
 	.callbackButton({ label: '📈 Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
