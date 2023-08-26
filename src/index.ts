@@ -125,17 +125,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
         trigger = await prisma.trigger.create({ data: { id_user: user.id, name: 'antiflud', value: false } })
         console.log(`Init antiflud for user ${context.peerId}`)
     }
-    const datenow: Date = new Date()
-	const dateold: Date = new Date(trigger!.update)
-	if (user.limiter >= 100 || (Number(datenow) - Number(dateold)) > 600000 ) {
-		await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
-		await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
-		if (user.limiter >= 100) {
-			await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
-			await Sleep(420000)
-			await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
-		}
-	}
+    
 	if (user.status == "banned") { return await next() }
 	//await Sleep(4000)
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
@@ -159,6 +149,18 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	}
 	try {
 		await config[context.eventPayload.command](context, user)
+		const datenow: Date = new Date()
+		const dateold: Date = new Date(trigger!.update)
+		if (user.limiter >= 100 || (Number(datenow) - Number(dateold)) > 600000 ) {
+			await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
+			await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
+			if (user.limiter >= 100) {
+				await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
+				await Sleep(420000)
+				await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
+			}
+			return await next()
+		}
 	} catch (e) {
 		console.log(`Ошибка события ${e}`)
 	}

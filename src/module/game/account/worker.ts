@@ -16,7 +16,7 @@ function Finder_Builder(builder_list: Builder[], worker: Worker) {
 }
 export async function Worker_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    const worker_list: Worker[] = await prisma.worker.findMany({ where: { id_user: user.id }, orderBy: { point: "desc" } })
+    const worker_list: Worker[] = await prisma.worker.findMany({ where: { id_user: user.id }, orderBy: { id_builder: "asc" } })
     const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
     let event_logger = `❄ Отдел кадров:\n\n`
     let cur = context.eventPayload.office_current ?? 0
@@ -76,7 +76,7 @@ type Office_Controller = {
 
 async function Worker_Target(context: Context, user: User, target: number) {
     //let attached = await Image_Random(context, "beer")
-    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id }, orderBy: { id: "desc" } })
+    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id }, orderBy: { worker: "asc" } })
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Выберите новое место работы для вашего работника: \n\n`
     const curva = context.eventPayload.office_current || 0
