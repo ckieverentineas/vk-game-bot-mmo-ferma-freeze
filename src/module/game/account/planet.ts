@@ -16,7 +16,7 @@ export async function Planet_Control(context: Context, user: User) {
     const planet = planet_list[cur]
     if (planet_list.length > 0) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
-        keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_object: planet.id  }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
 		//.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })

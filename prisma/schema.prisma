@@ -14,6 +14,7 @@ model User {
   lvl            Int        @default(1)
   xp             Float      @default(0)
   gold           Float      @default(350)
+  iron Float @default(350)
   crystal        Int        @default(0)
   energy         Float      @default(0)
   reputation     Float      @default(0)
@@ -68,6 +69,10 @@ model Builder {
   income    Float    @default(1)
   cost      Float    @default(100)
   worker    Int      @default(1)
+  costing      String @default("empty")
+  input      String @default("empty")
+  output      String @default("empty")
+  require      String @default("empty")
   id_user   Int
   id_planet Int?
   crdate    DateTime @default(now())

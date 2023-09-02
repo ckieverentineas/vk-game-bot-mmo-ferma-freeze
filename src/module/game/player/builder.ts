@@ -12,6 +12,20 @@ export interface Builder_Init {
     description: string;
 }
 
+export interface Builder_Set {
+    builder: string;
+    cost: Cost[];
+    input?: Input[];
+    output?: Output[];
+    require: Require[];
+    description: string;
+}
+
+export interface Cost_Set {
+    name: string;
+    count: number;
+}
+
 export interface Cost {
     name: string;
     count: number;
@@ -21,7 +35,7 @@ export interface Cost {
 export interface Input {
     name: string;
     income: number;
-    koef: number;
+    koef: number | 'none';
     time: any;
 }
 
@@ -162,6 +176,33 @@ const buildin: Builder_Init[] = [
         ],
         description: 'Города - места где рабочие чилят'
     },
+    {
+        builder: "Склад",
+        cost: [
+            { name: 'gold', count: 100, koef: 1.3838 },
+            { name: 'iron', count: 10, koef: 1.3838 },
+        ],
+        input: [
+            { name: 'coal', income: 0, koef: 'none', time: 'none' },
+            { name: 'gas', income: 0, koef: 'none', time: 'none' },
+            { name: 'oil', income: 0, koef: 'none', time: 'none' },
+            { name: 'slate', income: 0, koef: 'none', time: 'none' },
+            { name: 'turf', income: 0, koef: 'none', time: 'none' },
+            { name: 'uranium', income: 0, koef: 'none', time: 'none' },
+            
+            { name: 'iron', income: 0, koef: 'none', time: 'none' },
+            { name: 'golden', income: 0, koef: 'none', time: 'none' },
+            { name: 'artefact', income: 0, koef: 'none', time: 'none' },
+            { name: 'crystal', income: 0, koef: 'none', time: 'none' },
+        ],
+        output: [
+            { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
+        ],
+        require: [
+            { name: 'worker', limit: 1, koef: 1.01 }
+        ],
+        description: 'Склад - хранилище для добытых ресурсов на планете'
+    },
     //"Фабрика": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'energy', smile: '⚡', description: "Электростанция является источником энергии для вашего бизнеса в виде энергии" }
 ]
 
@@ -176,8 +217,8 @@ export async function Builder_Control(context: Context, user: User) {
         //const sel = buildin[0]
         const lvl_new = builder.lvl+1
         const price_new = 2*(lvl_new**2)
-        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id  }, color: 'secondary' }).row()
-        .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
+        .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n💰 Вложено: ${builder.cost.toFixed(2)}\n Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
     } else {
@@ -185,26 +226,26 @@ export async function Builder_Control(context: Context, user: User) {
     }
     //следующий офис
     if (builder_list.length > 1 && cur < builder_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id }, color: 'secondary' })
+        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
     }
     //предыдущий офис
     if (builder_list.length > 1 && cur > 0) {
-        keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', office_current: cur-1, target: builder.id }, color: 'secondary' })
+        keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', office_current: cur-1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
     }
     
     if (builder_list.length > 5) {
         if ( cur < builder_list.length/2) {
             //последний офис
-            keyboard.callbackButton({ label: '→🕯', payload: { command: 'builder_control', office_current: builder_list.length-1, target: builder.id }, color: 'secondary' })
+            keyboard.callbackButton({ label: '→🕯', payload: { command: 'builder_control', office_current: builder_list.length-1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
         } else {
             //первый офис
-            keyboard.callbackButton({ label: '←🕯', payload: { command: 'builder_control', office_current: 0, target: builder.id }, color: 'secondary' })
+            keyboard.callbackButton({ label: '←🕯', payload: { command: 'builder_control', office_current: 0, target: builder.id, id_planet: id_planet }, color: 'secondary' })
         }
     }
     //новый офис
-    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add' }, color: 'secondary' })
+    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_planet: id_planet }, color: 'secondary' })
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
@@ -224,55 +265,132 @@ type Office_Controller = {
     [key: string]: (context: Context, user: User, target: number) => Promise<void>;
 }
 
+async function Builder_Finder(need: string) {
+    for (const build of buildin) {
+        if (build.builder == need) {
+            return build 
+        }
+    }
+    return false
+}
+async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: number): Promise<{message: string, gold: number, iron: number, status: boolean}> {
+    let event_logger = { message: '', gold: 0, iron: 0, status: true}
+    const planet_check = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (planet_check) {
+        const builder_count = await prisma.builder.count({ where: { id_planet: planet_check.id } } )
+        if (builder_count < planet_check.build) {
+            event_logger.message = `✅ Свободно площадок на планете ${builder_count}/${planet_check.build}\n`
+        } else {
+            event_logger.message = `⛔ Занято площадок на планете ${builder_count}/${planet_check.build}\n`
+            event_logger.status = false
+            return event_logger
+        }
+    }
+    for (const data of build.cost) {
+        if (data.name == 'gold') {
+            if (user.gold > data.count) {
+                event_logger.message += `✅ Будет списан ресурс ${data.name} в количестве ${data.count}, на балансе останется: ${(user.gold - data.count).toFixed(2)}\n`
+                event_logger.gold += data.count
+                continue
+            } else {
+                event_logger.message += `⛔ Вам не хватает ${data.name} в размере ${(data.count - user.gold).toFixed(2)}\n`
+                event_logger.status = false
+                return event_logger
+            }
+        }
+        if (data.name == 'iron') {
+            if (user.iron > data.count) {
+                event_logger.message += `✅ Будет списан ресурс ${data.name} в количестве ${data.count}, на балансе останется: ${(user.iron - data.count).toFixed(2)}\n`
+                event_logger.iron += data.count
+                continue
+            } else {
+                event_logger.message += `⛔ Вам не хватает ${data.name} в размере ${(data.count - user.iron).toFixed(2)}\n`
+                event_logger.status = false
+                return event_logger
+            }
+        }
+    }
+    event_logger.message
+    return event_logger
+}
 async function Builder_Add(context: Context, user: User, target: number) {
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Выберите новое здание для стройки:\n\n`
     const cur = context.eventPayload.target_current || 0
+    let id_planet = context.eventPayload.id_planet ?? 0
     if (context.eventPayload.selector) {
-        //const sel = buildin[context.eventPayload.selector]
-        const lvl_new = 1
-        const price_new = 2*(lvl_new**2)
-        const worker_new = lvl_new/10 >= 1 ? Math.floor(lvl_new/10) : 1
-        const income_new = 2*(lvl_new**2)
-        if (user.gold >= price_new) {
+        const sel: Builder_Set | false = await Builder_Finder(context.eventPayload.selector)
+        const build_calc: Builder_Init = {
+            builder: `${context.eventPayload.selector}`,
+            cost: [],
+            input: [],
+            output: [],
+            require: [],
+            description: 'zero'
+        }
+        if (sel) {
+            for (let cost of sel.cost) {
+                const lvl_new = 1 
+                build_calc.cost.push({name: cost.name, count: cost.count*(lvl_new**cost.koef), koef: cost.koef})
+            }
+            if (sel.input) {
+                for (let input of sel.input) {
+                    const lvl_new = 1 
+                    build_calc.input?.push({name: input.name, income: input.koef != 'none' ? input.income*(lvl_new**input.koef) : input.income, koef: input.koef, time: input.time})
+                }
+            }
+            if (sel.output) {
+                for (let output of sel.output) {
+                    const lvl_new = 1 
+                    build_calc.input?.push({name: output.name, income: output.outcome*(lvl_new**output.koef), koef: output.koef, time: output.time})
+                }
+            }
+            if (sel.require) {
+                for (let require of sel.require) {
+                    const lvl_new = 1 
+                    build_calc.require.push({name: require.name, limit: require.limit*(lvl_new**require.koef), koef: require.koef })
+                }
+            }
+        }
+        const build_checker = await Builder_Add_Check(user, build_calc, id_planet)
+        if (build_checker.status) {
             await prisma.$transaction([
-                prisma.builder.create({ data: { id_user: user.id, name: context.eventPayload.selector, income: income_new, worker: worker_new, cost: price_new, type: 'sel.type' } }),
-                prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: price_new } } })
-            ]).then(([builder_new, user_pay]) => {
-                event_logger = `⌛ Поздравляем с приобритением ${builder_new.name}-${builder_new.id}.\n🏦 На вашем счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_pay.gold.toFixed(2)}` 
-                console.log(`⌛ Поздравляем ${user.idvk} с приобритением ${builder_new.name}-${builder_new.id}.\n🏦 На его/ее счете было ${user.gold.toFixed(2)} шекелей, снято ${price_new.toFixed(2)}, остаток: ${user_pay.gold.toFixed(2)}`);
+                prisma.builder.create({ data: { id_user: user.id, name: build_calc.builder, costing: JSON.stringify(build_calc.cost), input: JSON.stringify(build_calc.input) ?? '', output: JSON.stringify(build_calc.output) || '', require: JSON.stringify(build_calc.require), id_planet: id_planet } }),
+                prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: build_checker.gold }, iron: { decrement: build_checker.iron } } })
+            ]).then(([builder_new, user_up]) => {
+                event_logger = `⌛ Поздравляем с приобритением ${builder_new.name}-${builder_new.id}.\n Остаток: ${user_up.gold.toFixed(2)}💰 ${user_up.iron.toFixed(2)}📏` 
+                console.log(`⌛ Поздравляем ${user.idvk} с приобритением ${builder_new.name}-${builder_new.id}.\n Остаток: ${user_up.gold.toFixed(2)}💰 ${user_up.iron.toFixed(2)}📏`);
             })
             .catch((error) => {
                 event_logger = `⌛ Произошла ошибка приобретения нового здания, попробуйте позже` 
                 console.error(`Ошибка: ${error.message}`);
             });
         } else {
-            event_logger = `⌛ На вашем банковском счете недостает ${(price_new-user.gold).toFixed(2)} шекелей для постройки нового здания.`
+            event_logger = `⌛ ${build_checker.message}`
         }
     } else {
         const limiter = 5
         let counter = 0
         for (let i=cur; i < buildin.length && counter < limiter; i++) {
             const builder = buildin[i]
-            const price_new = builder.cost[0].count*(1**builder.cost[0].koef)
-            console.log(`➕ ${builder.builder} ${price_new}💰`)
-            keyboard.callbackButton({ label: `➕ ${builder.builder} ${price_new}💰`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target: target, selector: builder.builder }, color: 'secondary' }).row()
-            event_logger += `\n\n💬 Здание: ${builder.builder}\n ${builder.description}`;
+            keyboard.callbackButton({ label: `➕ ${builder.builder}`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target: target, selector: builder.builder, id_planet: id_planet }, color: 'secondary' }).row()
+            event_logger += `\n\n💬 Здание: ${builder.builder}\n ${builder.description}\n`;
+            event_logger += (await Builder_Add_Check(user, builder, id_planet)).message
             counter++
         }
         event_logger += `\n\n${buildin.length > 1 ? `~~~~ ${cur + buildin.length > cur+limiter ? limiter : limiter-(buildin.length-cur)} из ${buildin.length} ~~~~` : ''}`
             //предыдущий офис
             if (buildin.length > limiter && cur > limiter-1) {
-                keyboard.callbackButton({ label: '←', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur-limiter, target: target }, color: 'secondary' })
+                keyboard.callbackButton({ label: '←', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur-limiter, target: target, id_planet: id_planet }, color: 'secondary' })
             }
             //следующий офис
             if (buildin.length > limiter && cur < buildin.length-1) {
-                keyboard.callbackButton({ label: '→', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur+limiter, target: target }, color: 'secondary' })
+                keyboard.callbackButton({ label: '→', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur+limiter, target: target, id_planet: id_planet }, color: 'secondary' })
             }
             keyboard.callbackButton({ label: `❌ Фриланс`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur, target: target, selector: 'zero' }, color: 'secondary' })
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: target }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: target, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 /*
