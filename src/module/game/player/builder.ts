@@ -206,44 +206,81 @@ const buildin: Builder_Init[] = [
     //"Фабрика": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'energy', smile: '⚡', description: "Электростанция является источником энергии для вашего бизнеса в виде энергии" }
 ]
 
+const icotransl_list: { [key: string]: { name: string, smile: string } } = {
+    'coal': {name: 'Уголь', smile: '🏙'},
+    'gas': {name: 'Газ', smile: '🏙'},
+    'oil': {name: 'Нефть', smile: '🏙'},
+    'slate': {name: 'Сланец', smile: '🏙'},
+    'turf': {name: 'Торф', smile: '🏙'},
+    'uranium': {name: 'Ураниум', smile: '🏙'},
+    'iron': {name: 'Железные слитки', smile: '📏'},
+    'golden': {name: 'Золотые слитки', smile: '🧈'},
+    'artefact': {name: 'Артефакты', smile: '⚱️'},
+    'crystal': {name: 'Караты', smile: '💎'},
+    'worker': { name: 'Рабочие', smile: '👥'},
+    'energy': { name: 'Энергия', smile: '⚡'},
+    'gold': { name: 'Шекели', smile: '💰'},
+}
 export async function Builder_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Отдел управления сооружениями:\n\n`
-    let cur = context.eventPayload.office_current ?? 0
+    let id_builder_sent = context.eventPayload.id_builder_sent ?? 0
     let id_planet = context.eventPayload.id_planet ?? 0
     const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { lvl: "asc" } })
-    const builder = builder_list[cur]
+    const builder = builder_list[id_builder_sent]
+    console.log(builder)
     if (builder_list.length > 0) {
         //const sel = buildin[0]
         const lvl_new = builder.lvl+1
         const price_new = 2*(lvl_new**2)
-        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
-        .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: cur, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
+        .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
-        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📈 Уровень: ${builder.lvl}\n💰 Вложено: ${builder.cost.toFixed(2)}\n Прибыль: ${builder.income.toFixed(2)}\n👥 Рабочих: ${builder.worker}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${builder_list.length} ~~~~` : ''}`;
+        const costs: Cost[] = JSON.parse(builder.costing)
+        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📝 Уровень: ${builder.lvl}\n`
+        event_logger += `\n📊 Вложено: \n`
+        for (const cost of costs) {
+            event_logger += `${icotransl_list[cost.name].smile} ${icotransl_list[cost.name].name} --> ${cost.count}\n`
+        }
+        const inputs: Input[] = JSON.parse(builder.input)
+        event_logger += `\n📈 Прибыль: \n`
+        for (const input of inputs) {
+            event_logger += `${icotransl_list[input.name].smile} ${icotransl_list[input.name].name} --> ${input.income}  ${input.time != 'none' ? `в ${input.time/3600000} час(ов)` : ''}\n`
+        }
+        const outputs: Output[] = JSON.parse(builder.output)
+        event_logger += `\n📉 Потребление: \n`
+        for (const output of outputs) {
+            event_logger += `${icotransl_list[output.name].smile} ${icotransl_list[output.name].name} --> ${output.outcome} в ${output.time/3600000} час(ов)\n`
+        }
+        const requires: Require[] = JSON.parse(builder.require)
+        event_logger += `\n⚙ Требования: \n`
+        for (const require of requires) {
+            event_logger += `${icotransl_list[require.name].smile} ${icotransl_list[require.name].name} --> ${require.limit}\n`
+        }
+        event_logger +=`\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
     }
-    //следующий офис
-    if (builder_list.length > 1 && cur < builder_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', office_current: cur+1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
-    }
-    //предыдущий офис
-    if (builder_list.length > 1 && cur > 0) {
-        keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', office_current: cur-1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
-    }
     
+    //предыдущий офис
+    if (builder_list.length > 1 && id_builder_sent > 0) {
+        keyboard.callbackButton({ label: '←', payload: { command: 'builder_control', id_builder_sent: id_builder_sent-1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
+    }
+    //следующий офис
+    if (builder_list.length > 1 && id_builder_sent < builder_list.length-1) {
+        keyboard.callbackButton({ label: '→', payload: { command: 'builder_control', id_builder_sent: id_builder_sent+1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
+    }
     if (builder_list.length > 5) {
-        if ( cur < builder_list.length/2) {
+        if ( id_builder_sent < builder_list.length/2) {
             //последний офис
-            keyboard.callbackButton({ label: '→🕯', payload: { command: 'builder_control', office_current: builder_list.length-1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
+            keyboard.callbackButton({ label: '→🕯', payload: { command: 'builder_control', id_builder_sent: builder_list.length-1, target: builder.id, id_planet: id_planet }, color: 'secondary' })
         } else {
             //первый офис
-            keyboard.callbackButton({ label: '←🕯', payload: { command: 'builder_control', office_current: 0, target: builder.id, id_planet: id_planet }, color: 'secondary' })
+            keyboard.callbackButton({ label: '←🕯', payload: { command: 'builder_control', id_builder_sent: 0, target: builder.id, id_planet: id_planet }, color: 'secondary' })
         }
     }
     //новый офис
-    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_planet: id_planet }, color: 'secondary' })
+    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
@@ -253,9 +290,10 @@ export async function Builder_Controller(context: Context, user: User) {
     const target = context.eventPayload.target ?? 0
     const config: Office_Controller = {
         'builder_add': Builder_Add,
+        'builder_destroy': Builder_Destroy,
         /*'builder_upgrade': Builder_Upgrade, 
         'builder_config': Office_Config,
-        'builder_destroy': Builder_Destroy,
+        
         'builder_open': Office_Open*/
     }
     await config[context.eventPayload.command_sub](context, user, target)
@@ -318,6 +356,7 @@ async function Builder_Add(context: Context, user: User, target: number) {
     let event_logger = `❄ Выберите новое здание для стройки:\n\n`
     const cur = context.eventPayload.target_current || 0
     let id_planet = context.eventPayload.id_planet ?? 0
+    let id_builder_sent = context.eventPayload.id_builder_sent ?? 0
     if (context.eventPayload.selector) {
         const sel: Builder_Set | false = await Builder_Finder(context.eventPayload.selector)
         const build_calc: Builder_Init = {
@@ -342,7 +381,7 @@ async function Builder_Add(context: Context, user: User, target: number) {
             if (sel.output) {
                 for (let output of sel.output) {
                     const lvl_new = 1 
-                    build_calc.input?.push({name: output.name, income: output.outcome*(lvl_new**output.koef), koef: output.koef, time: output.time})
+                    build_calc.output?.push({name: output.name, outcome: output.outcome*(lvl_new**output.koef), koef: output.koef, time: output.time})
                 }
             }
             if (sel.require) {
@@ -373,7 +412,7 @@ async function Builder_Add(context: Context, user: User, target: number) {
         let counter = 0
         for (let i=cur; i < buildin.length && counter < limiter; i++) {
             const builder = buildin[i]
-            keyboard.callbackButton({ label: `➕ ${builder.builder}`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target: target, selector: builder.builder, id_planet: id_planet }, color: 'secondary' }).row()
+            keyboard.callbackButton({ label: `➕ ${builder.builder}`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, id_builder_sent: id_builder_sent, target: target, selector: builder.builder, id_planet: id_planet }, color: 'secondary' }).row()
             event_logger += `\n\n💬 Здание: ${builder.builder}\n ${builder.description}\n`;
             event_logger += (await Builder_Add_Check(user, builder, id_planet)).message
             counter++
@@ -381,16 +420,15 @@ async function Builder_Add(context: Context, user: User, target: number) {
         event_logger += `\n\n${buildin.length > 1 ? `~~~~ ${cur + buildin.length > cur+limiter ? limiter : limiter-(buildin.length-cur)} из ${buildin.length} ~~~~` : ''}`
             //предыдущий офис
             if (buildin.length > limiter && cur > limiter-1) {
-                keyboard.callbackButton({ label: '←', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur-limiter, target: target, id_planet: id_planet }, color: 'secondary' })
+                keyboard.callbackButton({ label: '←', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, id_builder_sent: id_builder_sent, target_current: cur-limiter, target: target, id_planet: id_planet }, color: 'secondary' })
             }
             //следующий офис
             if (buildin.length > limiter && cur < buildin.length-1) {
-                keyboard.callbackButton({ label: '→', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur+limiter, target: target, id_planet: id_planet }, color: 'secondary' })
+                keyboard.callbackButton({ label: '→', payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, id_builder_sent: id_builder_sent, target_current: cur+limiter, target: target, id_planet: id_planet }, color: 'secondary' })
             }
-            keyboard.callbackButton({ label: `❌ Фриланс`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, target_current: cur, target: target, selector: 'zero' }, color: 'secondary' })
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: target, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, id_builder_sent: id_builder_sent, target: target, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 /*
@@ -431,33 +469,43 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
     keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: cur, target: undefined }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ //})
 //}
-/*
+
 async function Builder_Destroy(context: Context, user: User, target: number) {
     const keyboard = new KeyboardBuilder()
     const builder: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id: target }})
     let event_logger = `В данный момент нельзя снести здания...`
+    let id_planet = context.eventPayload.id_planet ?? 0
+    let id_builder_sent = context.eventPayload.id_builder_sent ?? 0
     if (builder) {
         if (context.eventPayload.status == "ok") {
-            const sel = buildin[builder.name]
-            const lvl_new = builder.lvl
-            const price_return = sel.price*(lvl_new**sel.koef_price)
+            const costs: Cost[] = JSON.parse(builder.costing)
+            let gold_return = 0
+            let iron_return = 0
+            for (const cost of costs) {
+                if (cost.name == 'gold') {
+                    gold_return += cost.count
+                }
+                if (cost.name == 'iron') {
+                    iron_return += cost.count
+                }
+            }
             await prisma.$transaction([
                 prisma.builder.delete({ where: { id: builder.id } }),
-                prisma.user.update({ where: { id: user.id }, data: { gold: { increment: price_return } } })
+                prisma.user.update({ where: { id: user.id }, data: { gold: { increment: gold_return/2 } } })
             ]).then(([builder_del, user_return]) => {
-                event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На вашем счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰` 
-                console.log(`⌛ Поздравляем ${user.idvk} с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На его/ее счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰`);
+                event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 Вам возвращено 50%, теперь на балансе ${user_return.gold.toFixed(2)}💰` 
+                console.log(`⌛ Поздравляем ${user.idvk} с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 Вам возвращено 50%, теперь на балансе ${user_return.gold.toFixed(2)}💰`);
             })
             .catch((error) => {
                 event_logger = `⌛ Произошла ошибка разрушения здания, попробуйте позже` 
                 console.error(`Ошибка: ${error.message}`);
             });
         } else {
-            event_logger = `Вы уверены, что хотите снести ${builder.name}-${builder.id}?`
-            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: 0, target: builder.id, status: "ok" }, color: 'secondary' })
+            event_logger = `Вы уверены, что хотите снести ${builder.name}-${builder.id} вам вернется не более 50% стоимости шекелей?`
+            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_destroy', id_builder_sent: id_builder_sent, office_current: 0, target: builder.id, status: "ok", id_planet: id_planet }, color: 'secondary' })
         } 
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ //})
-//}
+    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, id_builder_sent, target: undefined, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
+    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+}
