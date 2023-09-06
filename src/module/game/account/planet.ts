@@ -3,6 +3,7 @@ import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
 import { Randomizer_Float } from "../service";
+import { Time_Controller } from "../player/service";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
     "Планета": { price: 100000, koef_price: 10, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" }
@@ -14,6 +15,7 @@ export async function Planet_Control(context: Context, user: User) {
     let event_logger = `❄ Отдел управления планетами:\n\n`
     let cur = context.eventPayload.current_object ?? 0
     const planet = planet_list[cur]
+    await Time_Controller(context, user, planet.id)
     if (planet_list.length > 0) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()

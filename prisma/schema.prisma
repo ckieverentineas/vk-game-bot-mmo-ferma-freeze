@@ -49,10 +49,10 @@ model Planet {
 
   iron    Float
   golden  Float
-  crystal Int
+  crystal Float
 
   build    Int @default(5)
-  artefact Int
+  artefact Float
 
   id_user   Int?
   id_system Int
