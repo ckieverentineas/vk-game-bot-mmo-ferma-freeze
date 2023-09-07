@@ -22,7 +22,7 @@ export const buildin: Builder_Init[] = [
             { name: 'energy', outcome: 1, koef: 1.5, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: "Шахты позволяют истощать ресурсы планет"
     },
@@ -39,7 +39,7 @@ export const buildin: Builder_Init[] = [
             { name: 'coal', outcome: 1, koef: 1.4, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Электростанция потреБЛЯет преобразует добытый уголь в энергию'
     },
@@ -53,7 +53,7 @@ export const buildin: Builder_Init[] = [
             { name: 'energy', income: 5, koef: 1.5, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Солнечная электростанция преобразует энергию света в энергию'
     },
@@ -71,7 +71,7 @@ export const buildin: Builder_Init[] = [
             { name: 'golden', outcome: 1, koef: 1.4, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Центральный банк делает шекели из добытых золотых слитков'
     },
@@ -86,7 +86,7 @@ export const buildin: Builder_Init[] = [
             { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Археологический центр позволяет открывать артефакты, из которых могут выпасть даже площадки к планетам'
     },
@@ -100,7 +100,7 @@ export const buildin: Builder_Init[] = [
             { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Лаборатория позволяет производить исследования'
     },
@@ -118,7 +118,7 @@ export const buildin: Builder_Init[] = [
             { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Города - места где рабочие чилят'
     },
@@ -145,7 +145,7 @@ export const buildin: Builder_Init[] = [
             { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
         ],
         require: [
-            { name: 'worker', limit: 1, koef: 1.01 }
+            { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Склад - хранилище для добытых ресурсов на планете'
     },

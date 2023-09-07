@@ -1,7 +1,7 @@
 import { User, Builder, Planet } from "@prisma/client"
 import { Context } from "vk-io"
 import prisma from "../../prisma";
-import { Input } from "../datacenter/builder_config";
+import { Input, Output, Require } from "../datacenter/builder_config";
 import { Send_Message } from "../account/service";
 
 export async function Time_Controller(context: Context, user: User, id_planet: number) {
@@ -36,13 +36,23 @@ async function Mine_Controller(context: Context, user: User, builder: Builder, i
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
     const inputs_mine: Input[] = JSON.parse(builder.input)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
     //let event_logger = ``
     async function Resource_Finder_Nafig(input_storage: Input[], input_mine: Input, target: string) {
         const data = { income: 0, counter: 0 }
         for (let i=0; i < input_storage.length; i++) {
             const store = input_storage[i]
             if (store.name == target) {
-                data.income = input_mine.income * (Number(datenow)-Number(dateold))/input_mine.time
+                console.log(`${input_mine.name}: ${input_mine.income} * (${Number(datenow)} - ${Number(dateold)})/${input_mine.time}*${global_koef}=${input_mine.income * (Number(datenow)-Number(dateold))/input_mine.time*global_koef}`)
+                data.income = input_mine.income * (Number(datenow)-Number(dateold))/input_mine.time*global_koef
                 data.counter = i
             }
         }
@@ -86,10 +96,8 @@ async function Mine_Controller(context: Context, user: User, builder: Builder, i
             }
         }
     }
-    console.log(inputs_storage)
-    console.log(income_wil)
     await prisma.$transaction([
-        prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: builder.update } }),
+        prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
         prisma.planet.update({ where: { id: id_planet }, data: { coal: { decrement: income_wil.coal }, gas: { decrement: income_wil.gas }, oil: { decrement: income_wil.oil }, slate: { decrement: income_wil.slate }, turf: { decrement: income_wil.turf }, uranium: { decrement: income_wil.uranium }, iron: { decrement: income_wil.iron }, golden: { decrement: income_wil.golden }, artefact: { decrement: income_wil.artefact }, crystal: { decrement: income_wil.crystal } } })
     ]).then(([]) => {
         console.log('Успешная добыча ресов нафиг')
@@ -98,14 +106,20 @@ async function Mine_Controller(context: Context, user: User, builder: Builder, i
         //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
         console.error(`Ошибка: ${error.message}`);
     });
-    /*
+    
     const outputs: Output[] = JSON.parse(builder.output)
     for (const output of outputs) {
-
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление шахт нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
     }
-    const requires: Require[] = JSON.parse(builder.require)
-    for (const require of requires) {
-
-    }
-    */
 }

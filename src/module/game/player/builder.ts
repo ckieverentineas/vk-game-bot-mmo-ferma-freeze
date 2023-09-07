@@ -24,22 +24,22 @@ export async function Builder_Control(context: Context, user: User) {
         event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📝 Уровень: ${builder.lvl}\n`
         event_logger += `\n📊 Вложено: \n`
         for (const cost of costs) {
-            event_logger += `${icotransl_list[cost.name].smile} ${icotransl_list[cost.name].name} --> ${cost.count}\n`
+            event_logger += `${icotransl_list[cost.name].smile} ${icotransl_list[cost.name].name} --> ${cost.count.toFixed(2)}\n`
         }
         const inputs: Input[] = JSON.parse(builder.input)
         event_logger += `\n📈 Прибыль: \n`
         for (const input of inputs) {
-            event_logger += `${icotransl_list[input.name].smile} ${icotransl_list[input.name].name} --> ${input.income}  ${input.time != 'none' ? `в ${input.time/3600000} часа(ов)` : ''}\n`
+            event_logger += `${icotransl_list[input.name].smile} ${icotransl_list[input.name].name} --> ${input.income.toFixed(2)}  ${input.time != 'none' ? `в ${input.time/3600000} часа(ов)` : ''}\n`
         }
         const outputs: Output[] = JSON.parse(builder.output)
         event_logger += `\n📉 Потребление: \n`
         for (const output of outputs) {
-            event_logger += `${icotransl_list[output.name].smile} ${icotransl_list[output.name].name} --> ${output.outcome} в ${output.time/3600000} час(ов)\n`
+            event_logger += `${icotransl_list[output.name].smile} ${icotransl_list[output.name].name} --> ${output.outcome.toFixed(2)} в ${output.time/3600000} час(ов)\n`
         }
         const requires: Require[] = JSON.parse(builder.require)
         event_logger += `\n⚙ Требования: \n`
         for (const require of requires) {
-            event_logger += `${icotransl_list[require.name].smile} ${icotransl_list[require.name].name} --> ${require.limit}\n`
+            event_logger += `${icotransl_list[require.name].smile} ${icotransl_list[require.name].name} --> ${require.limit.toFixed(0)}\n`
         }
         event_logger +=`\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} ~~~~` : ''}`;
     } else {
@@ -269,7 +269,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
                 for (const input_new of inputs_new) {
                     for (const input of inputs) {
                         if (input.name == input_new.name) {
-                            event_logger += `${icotransl_list[input.name].smile} ${icotransl_list[input.name].name}: ${input.income} --> ${input_new.income}  ${input.time != 'none' ? `в ${input.time/3600000} часа(ов)` : ''}\n`
+                            event_logger += `${icotransl_list[input.name].smile} ${icotransl_list[input.name].name}: ${input.income.toFixed(2)} --> ${input_new.income.toFixed(2)}  ${input.time != 'none' ? `в ${input.time/3600000} часа(ов)` : ''}\n`
                         }
                     }
                 }
@@ -281,7 +281,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
                 for (const output_new of outputs_new) {
                     for (const output of outputs) {
                         if (output.name == output_new.name) {
-                            event_logger += `${icotransl_list[output.name].smile} ${icotransl_list[output.name].name}: ${output.outcome} --> ${output_new.outcome} в ${output.time/3600000} час(ов)\n`
+                            event_logger += `${icotransl_list[output.name].smile} ${icotransl_list[output.name].name}: ${output.outcome.toFixed(2)} --> ${output_new.outcome.toFixed(2)} в ${output.time/3600000} час(ов)\n`
                         }
                     }
                 }
