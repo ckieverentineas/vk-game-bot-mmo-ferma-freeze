@@ -1,4 +1,4 @@
-import { User, Builder, Planet, System } from "@prisma/client"
+import { User, Planet, System } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
@@ -21,21 +21,20 @@ export async function Planet_Control(context: Context, user: User) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
-		//.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
+		.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золотых слитков: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железных слитков: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Угля: ${planet.coal.toFixed(2)}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`
     }
-    //следующий обьект
-    if (planet_list.length > 1 && cur < planet_list.length-1) {
-        keyboard.callbackButton({ label: '→', payload: { command: 'planet_control', current_object: cur+1 }, color: 'secondary' })
-    }
     //предыдущий обьект
     if (planet_list.length > 1 && cur > 0) {
         keyboard.callbackButton({ label: '←', payload: { command: 'planet_control', current_object: cur-1 }, color: 'secondary' })
     }
-    
+    //следующий обьект
+    if (planet_list.length > 1 && cur < planet_list.length-1) {
+        keyboard.callbackButton({ label: '→', payload: { command: 'planet_control', current_object: cur+1 }, color: 'secondary' })
+    }
     if (planet_list.length > 5) {
         if ( cur < planet_list.length/2) {
             //последний обьект
@@ -57,7 +56,7 @@ export async function Planet_Controller(context: Context, user: User) {
     const target = context.eventPayload.id_object ?? 0
     const config: Object_Controller = {
         'planet_add': Planet_Add,
-        'builder_destroy': Builder_Destroy,
+        'planet_destroy': Planet_Destroy,
     }
     await config[context.eventPayload.command_sub](context, user, target)
 }
@@ -115,32 +114,28 @@ async function Planet_Add(context: Context, user: User, ) {
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
-async function Builder_Destroy(context: Context, user: User, target?: number) {
+async function Planet_Destroy(context: Context, user: User, target?: number) {
     const keyboard = new KeyboardBuilder()
-    const builder: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id: target }})
-    let event_logger = `В данный момент нельзя снести здания...`
-    if (builder) {
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id_user: user.id, id: target }})
+    let event_logger = `В данный момент нельзя снести планету...`
+    if (planet) {
         if (context.eventPayload.status == "ok") {
-            const sel = buildin[builder.name]
-            const lvl_new = builder.lvl
-            const price_return = sel.price*(lvl_new**sel.koef_price)
             await prisma.$transaction([
-                prisma.builder.delete({ where: { id: builder.id } }),
-                prisma.user.update({ where: { id: user.id }, data: { gold: { increment: price_return } } })
-            ]).then(([builder_del, user_return]) => {
-                event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На вашем счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰` 
-                console.log(`⌛ Поздравляем ${user.idvk} с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 На его/ее счете было ${user.gold.toFixed(2)}₪, начислено ${price_return.toFixed(2)} шекелей, остаток: ${user_return.gold.toFixed(2)}💰`);
+                prisma.planet.delete({ where: { id: planet.id } }),
+            ]).then(([builder_del]) => {
+                event_logger = `⌛ Поздравляем с уничтожением планеты ${builder_del.name}-${builder_del.id}.\n` 
+                console.log(`⌛ Поздравляем ${user.idvk} с уничтожением планеты ${builder_del.name}-${builder_del.id}.`);
             })
             .catch((error) => {
-                event_logger = `⌛ Произошла ошибка разрушения здания, попробуйте позже` 
+                event_logger = `⌛ Произошла ошибка разрушения планеты, попробуйте позже` 
                 console.error(`Ошибка: ${error.message}`);
             });
         } else {
-            event_logger = `Вы уверены, что хотите снести ${builder.name}-${builder.id}?`
-            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_destroy', office_current: 0, target: builder.id, status: "ok" }, color: 'secondary' })
+            event_logger = `Вы уверены, что хотите снести ${planet.name}-${planet.id}?`
+            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id, status: "ok" }, color: 'secondary' })
         } 
     }
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
