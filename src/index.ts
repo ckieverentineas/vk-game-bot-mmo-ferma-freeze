@@ -119,13 +119,6 @@ vk.updates.on('wall_post_new', async (context: Context, next: any) => {
 })
 vk.updates.on('message_event', async (context: Context, next: any) => {
 	const user: any = await prisma.user.findFirst({ where: { idvk: context.peerId } })
-	await prisma.user.update({ where: { id: user.id }, data: { limiter: { increment: 1 } } })
-	let trigger: Trigger | null = await prisma.trigger.findFirst({ where: { id_user: user.id, name: 'antiflud' } })
-    if (!trigger) { 
-        trigger = await prisma.trigger.create({ data: { id_user: user.id, name: 'antiflud', value: false } })
-        console.log(`Init antiflud for user ${context.peerId}`)
-    }
-    
 	if (user.status == "banned") { return await next() }
 	//await Sleep(4000)
 	console.log(`${context.eventPayload.command} > ${JSON.stringify(context.eventPayload)}`)
@@ -149,16 +142,45 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 	}
 	try {
 		await config[context.eventPayload.command](context, user)
+		let trigger: Trigger | null = await prisma.trigger.findFirst({ where: { id_user: user.id, name: 'antiflud' } })
+		if (!trigger) { 
+			trigger = await prisma.trigger.create({ data: { id_user: user.id, name: 'antiflud', value: false } })
+			console.log(`Init antiflud for user ${context.peerId}`)
+		}
 		const datenow: Date = new Date()
 		const dateold: Date = new Date(trigger!.update)
-		if (user.limiter >= 100 || (Number(datenow) - Number(dateold)) > 600000 ) {
+		if (user.limiter >= 100 && (Number(datenow) - Number(dateold)) < 600000 ) {
 			await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
 			await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
-			if (user.limiter >= 100) {
-				await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!')
-				await Sleep(420000)
-				await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
-			}
+			await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 10 минут, мы вам сообщим о новом рабочем дне!')
+			await vk.api.messages.sendMessageEventAnswer({
+				event_id: context.eventId,
+				user_id: context.userId,
+				peer_id: context.peerId,
+				event_data: JSON.stringify({
+					type: "show_snackbar",
+					text: `☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!`
+				})
+			})
+			await Sleep(600000)
+			await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
+			
+			return await next()
+		} else {
+			await prisma.user.update({ where: { id: user.id }, data: { limiter: { increment: 1 } } })
+		}
+		if ((Number(datenow) - Number(dateold)) > 600000) {
+			await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
+			await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
+			await vk.api.messages.sendMessageEventAnswer({
+				event_id: context.eventId,
+				user_id: context.userId,
+				peer_id: context.peerId,
+				event_data: JSON.stringify({
+					type: "show_snackbar",
+					text: `✅ Начался новый рабочий день, приступайте к работе!`
+				})
+			})
 			return await next()
 		}
 	} catch (e) {
