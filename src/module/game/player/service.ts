@@ -3,18 +3,20 @@ import { Context } from "vk-io"
 import prisma from "../../prisma";
 import { Input, Output, Require } from "../datacenter/builder_config";
 import { Send_Message } from "../account/service";
+import Generator_Nickname from "module/fab/generator_name";
 
 export async function Time_Controller(context: Context, user: User, id_planet: number) {
     for (const builder of await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })) {
         const config: Builder_Selector = {
             'Шахты': Mine_Controller,
             'Электростанция': Powerstation_Controller,
-            /*'Солнечная электростанция': Powerstation_Solar_Controller,
+            'Солнечная электростанция': Powerstation_Solar_Controller,
             'Центробанк': Central_Bank_Controller,
-            'Археологический центр': Archaeological_Center_Controller,
-            'Лаборатория': Laboratory_Controller,
             'Города': City_Controller,
-            'Склад': Storage_Controller,*/
+            'Склад': Storage_Controller,
+            //'Археологический центр': Archaeological_Center_Controller,
+            //'Лаборатория': Laboratory_Controller,
+
         }
         try {
             await config[builder.name](context, user, builder, id_planet)
@@ -183,5 +185,214 @@ async function Powerstation_Controller(context: Context, user: User, builder: Bu
             });
         }
         
+    }
+}
+
+async function Powerstation_Solar_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+    const inputs_mine: Input[] = JSON.parse(builder.input)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
+    for (const input of inputs_mine) {
+        if (input.name == 'energy') {
+            console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
+            const data = input.income * (Number(datenow)-Number(dateold))/input.time*global_koef
+            console.log(`Добавлено энергии: ${data}`)
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { increment: data }, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+            ]).then(([]) => {
+                console.log('Успешная работа солнечной электростанции')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+        
+    }
+}
+
+async function Central_Bank_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
+    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+    const inputs_storage: Input[] = JSON.parse(storage.input)
+    const inputs_mine: Input[] = JSON.parse(builder.input)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
+    const outputs: Output[] = JSON.parse(builder.output)
+    for (const output of outputs) {
+        if (output.name == 'golden') {
+            const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'coal', datenow, dateold, global_koef)
+            if ( data.income < inputs_storage[data.counter].income ) {
+                inputs_storage[data.counter].income -= data.income
+            }
+        }
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление Центробанка нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+    for (const input of inputs_mine) {
+        if (input.name == 'gold') {
+            console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
+            const data = input.income * (Number(datenow)-Number(dateold))/input.time*global_koef
+            console.log(`Добавлено шекелей: ${data}`)
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { gold: { increment: data }, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+                prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
+            ]).then(([]) => {
+                console.log('Успешная работа Центробанка')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+}
+
+async function City_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+    const inputs_mine: Input[] = JSON.parse(builder.input)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
+    const outputs: Output[] = JSON.parse(builder.output)
+    for (const output of outputs) {
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление городами нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+    for (const input of inputs_mine) {
+        if (input.name == 'worker') {
+            const worker_planet = input.income
+            const worker_check = await prisma.worker.count({ where: { id_planet: id_planet, id_user: user.id } })
+            if (worker_check < worker_planet) {
+                let limiter = worker_planet - worker_check
+                for (const worker of await prisma.worker.findMany({ where: { id_user: user.id } })) {
+                    if (worker.id_planet != id_planet) {
+                        const worker_planet_check = await prisma.planet.findFirst({ where: { id_planet: worker.id_planet } })
+                        if (!worker_planet_check && limiter > 0) {
+                            await prisma.$transaction([
+                                prisma.worker.update({ where: { id: worker.id }, data: { id_planet: id_planet, update: datenow, id_builder: 0 } }),
+                                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+                            ]).then(([]) => {
+                                console.log(`Города успешно выявили рабочего ${worker.name}-${worker.id} с несуществующих планет и эвакуировали на ${planet.name}-${planet.id}`)
+                                limiter--
+                            }).catch((error) => {
+                                console.error(`Ошибка: ${error.message}`);
+                            });
+                        }
+                    }
+                }
+                if (limiter > 0) {
+                    await prisma.$transaction([
+                        prisma.worker.create({ data: { id_user: user.id, name: await Generator_Nickname(), id_planet: id_planet } }),
+                        prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+                    ]).then(([worker_new]) => {
+                        console.log(`Города успешно наняли недостающего рабочего ${worker_new.name}-${worker_new.id} на ${planet.name}-${planet.id}`)
+                    }).catch((error) => {
+                        console.error(`Ошибка: ${error.message}`);
+                    });
+                }
+                const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })
+                for (const builder of builder_list) {
+                    const requires_list: Require[] = JSON.parse(builder.require)
+                    for (const require of requires_list) {
+                        if (require.name == 'worker') {
+                            const worker_check_list = await prisma.worker.count({ where: { id_builder: builder.id } })
+                            if (worker_check_list < Math.floor(require.limit)) {
+                                let limiter_list = Math.floor(require.limit) - worker_check_list
+                                for (const worker_sel of await prisma.worker.findMany({ where: { id_planet: id_planet } })) {
+                                    const worker_clear = await prisma.builder.findFirst({ where: { id: worker_sel.id_builder } })
+                                    if (!worker_clear && limiter_list > 0) {
+                                        await prisma.$transaction([
+                                            prisma.worker.update({ where: { id: worker_sel.id }, data: { update: datenow, id_builder: builder.id } }),
+                                            prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+                                        ]).then(([]) => {
+                                            console.log(`Города успешно выявили безработного ${worker_sel.name}-${worker_sel.id} и устроили на работу в ${builder.name}-${builder.id} на ${planet.name}-${planet.id}`)
+                                            limiter_list--
+                                        }).catch((error) => {
+                                            console.error(`Ошибка: ${error.message}`);
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+async function Storage_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+    const outputs: Output[] = JSON.parse(builder.output)
+    for (const output of outputs) {
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление Центробанка нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
     }
 }
