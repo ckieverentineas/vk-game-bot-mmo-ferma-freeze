@@ -3,7 +3,7 @@ import { Context } from "vk-io"
 import prisma from "../../prisma";
 import { Input, Output, Require } from "../datacenter/builder_config";
 import { Send_Message } from "../account/service";
-import Generator_Nickname from "module/fab/generator_name";
+import Generator_Nickname from "../../../module/fab/generator_name";
 
 export async function Time_Controller(context: Context, user: User, id_planet: number) {
     for (const builder of await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })) {
@@ -288,15 +288,6 @@ async function City_Controller(context: Context, user: User, builder: Builder, i
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_mine: Input[] = JSON.parse(builder.input)
-
-    let global_koef = 0
-    const requires: Require[] = JSON.parse(builder.require)
-    for (const require of requires) {
-        if (require.name == 'worker') {
-            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
-            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
-        }
-    }
     const outputs: Output[] = JSON.parse(builder.output)
     for (const output of outputs) {
         if (output.name == 'energy') {
@@ -316,11 +307,12 @@ async function City_Controller(context: Context, user: User, builder: Builder, i
         if (input.name == 'worker') {
             const worker_planet = input.income
             const worker_check = await prisma.worker.count({ where: { id_planet: id_planet, id_user: user.id } })
+            console.log(`${worker_check} < ${worker_planet}`)
+            let limiter = worker_planet - worker_check
             if (worker_check < worker_planet) {
-                let limiter = worker_planet - worker_check
                 for (const worker of await prisma.worker.findMany({ where: { id_user: user.id } })) {
-                    if (worker.id_planet != id_planet) {
-                        const worker_planet_check = await prisma.planet.findFirst({ where: { id_planet: worker.id_planet } })
+                    if (worker.id_planet != id_planet ) {
+                        const worker_planet_check = await prisma.planet.findFirst({ where: { id: worker.id_planet || 0 } })
                         if (!worker_planet_check && limiter > 0) {
                             await prisma.$transaction([
                                 prisma.worker.update({ where: { id: worker.id }, data: { id_planet: id_planet, update: datenow, id_builder: 0 } }),
@@ -344,27 +336,27 @@ async function City_Controller(context: Context, user: User, builder: Builder, i
                         console.error(`Ошибка: ${error.message}`);
                     });
                 }
-                const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })
-                for (const builder of builder_list) {
-                    const requires_list: Require[] = JSON.parse(builder.require)
-                    for (const require of requires_list) {
-                        if (require.name == 'worker') {
-                            const worker_check_list = await prisma.worker.count({ where: { id_builder: builder.id } })
-                            if (worker_check_list < Math.floor(require.limit)) {
-                                let limiter_list = Math.floor(require.limit) - worker_check_list
-                                for (const worker_sel of await prisma.worker.findMany({ where: { id_planet: id_planet } })) {
-                                    const worker_clear = await prisma.builder.findFirst({ where: { id: worker_sel.id_builder } })
-                                    if (!worker_clear && limiter_list > 0) {
-                                        await prisma.$transaction([
-                                            prisma.worker.update({ where: { id: worker_sel.id }, data: { update: datenow, id_builder: builder.id } }),
-                                            prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
-                                        ]).then(([]) => {
-                                            console.log(`Города успешно выявили безработного ${worker_sel.name}-${worker_sel.id} и устроили на работу в ${builder.name}-${builder.id} на ${planet.name}-${planet.id}`)
-                                            limiter_list--
-                                        }).catch((error) => {
-                                            console.error(`Ошибка: ${error.message}`);
-                                        });
-                                    }
+            }
+            const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })
+            for (const builder of builder_list) {
+                const requires_list: Require[] = JSON.parse(builder.require)
+                for (const require of requires_list) {
+                    if (require.name == 'worker') {
+                        const worker_check_list = await prisma.worker.count({ where: { id_builder: builder.id } })
+                        if (worker_check_list < Math.floor(require.limit)) {
+                            let limiter_list = Math.floor(require.limit) - worker_check_list
+                            for (const worker_sel of await prisma.worker.findMany({ where: { id_planet: id_planet } })) {
+                                const worker_clear = await prisma.builder.findFirst({ where: { id: worker_sel.id_builder || 0 } })
+                                if (!worker_clear && limiter_list > 0) {
+                                    await prisma.$transaction([
+                                        prisma.worker.update({ where: { id: worker_sel.id }, data: { update: datenow, id_builder: builder.id } }),
+                                        prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+                                    ]).then(([]) => {
+                                        console.log(`Города успешно выявили безработного ${worker_sel.name}-${worker_sel.id} и устроили на работу в ${builder.name}-${builder.id} на ${planet.name}-${planet.id}`)
+                                        limiter_list--
+                                    }).catch((error) => {
+                                        console.error(`Ошибка: ${error.message}`);
+                                    });
                                 }
                             }
                         }
@@ -387,7 +379,7 @@ async function Storage_Controller(context: Context, user: User, builder: Builder
                 prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
             ]).then(([]) => {
-                console.log('Успешное потребление Центробанка нафиг')
+                console.log('Успешное потребление Склада нафиг')
             })
             .catch((error) => {
                 //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 

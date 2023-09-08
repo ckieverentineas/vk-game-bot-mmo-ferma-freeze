@@ -24,7 +24,7 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: "Шахты позволяют истощать ресурсы планет"
+        description: "Добывают разнообразные ресурсы из недр планет, необходимые для прокачки"
     },
     { 
         builder: "Электростанция",
@@ -41,10 +41,10 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Электростанция потреБЛЯет преобразует добытый уголь в энергию'
+        description: 'Производит энергию из горючих ресурсов'
     },
     { 
-        builder: "Солнечная электростанция",
+        builder: "Солнечная панель",
         cost: [
             { name: 'gold', count: 100000, koef: 1.3838 },
             { name: 'iron', count: 1000, koef: 1.3838 },
@@ -55,7 +55,7 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Солнечная электростанция преобразует энергию света в энергию'
+        description: 'Бесконечно создаёт энергию от солнца'
     },
     { 
         builder: "Центробанк",
@@ -73,7 +73,7 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Центральный банк делает шекели из добытых золотых слитков'
+        description: 'Создаёт из золота шекели'
     },
     {
         builder: "Археологический центр", 
@@ -120,7 +120,7 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Города - места где рабочие чилят'
+        description: 'Место в котором отдыхают и живут рабочие'
     },
     {
         builder: "Склад",
@@ -147,7 +147,7 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Склад - хранилище для добытых ресурсов на планете'
+        description: 'Здание где хранятся все добытые ресурсы с планеты'
     },
     //"Фабрика": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'energy', smile: '⚡', description: "Электростанция является источником энергии для вашего бизнеса в виде энергии" }
 ]

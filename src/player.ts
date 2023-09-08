@@ -4,6 +4,7 @@ import { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { Analyzer, Corporation, User } from "@prisma/client";
 import { Keyboard } from "vk-io";
+import { version_soft } from "./module/game/datacenter/system";
 
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
@@ -57,7 +58,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             const builder = await prisma.builder.count()
             const corporation = await prisma.corporation.count()
             const worker = await prisma.worker.count()
-            return `❄ FERma v 0.39:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
+            return `❄ FERma v ${version_soft}:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
         }
         async function Stat_Stop() {
             return `stop`
