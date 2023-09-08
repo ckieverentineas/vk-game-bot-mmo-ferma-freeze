@@ -51,7 +51,7 @@ model Planet {
   golden  Float
   crystal Float
 
-  build    Int @default(5)
+  build    Int @default(7)
   artefact Float
 
   id_user   Int?

@@ -14,6 +14,7 @@ export async function Time_Controller(context: Context, user: User, id_planet: n
             'Центробанк': Central_Bank_Controller,
             'Города': City_Controller,
             'Склад': Storage_Controller,
+            'Завод': Factory_Controller,
             //'Археологический центр': Archaeological_Center_Controller,
             //'Лаборатория': Laboratory_Controller,
 
@@ -273,6 +274,65 @@ async function Central_Bank_Controller(context: Context, user: User, builder: Bu
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
                 console.log('Успешная работа Центробанка')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+}
+
+async function Factory_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
+    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+    const inputs_storage: Input[] = JSON.parse(storage.input)
+    const inputs_mine: Input[] = JSON.parse(builder.input)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
+    const outputs: Output[] = JSON.parse(builder.output)
+    for (const output of outputs) {
+        if (output.name == 'iron') {
+            const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'coal', datenow, dateold, global_koef)
+            if ( data.income < inputs_storage[data.counter].income ) {
+                inputs_storage[data.counter].income -= data.income
+            }
+        }
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление Завода нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+    for (const input of inputs_mine) {
+        if (input.name == 'iron') {
+            console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
+            const data = input.income * (Number(datenow)-Number(dateold))/input.time*global_koef
+            console.log(`Добавлено шекелей: ${data}`)
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { iron: { increment: data }, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+                prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
+            ]).then(([]) => {
+                console.log('Успешная работа Завода')
             })
             .catch((error) => {
                 //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 

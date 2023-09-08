@@ -26,6 +26,50 @@ export const buildin: Builder_Init[] = [
         ],
         description: "Добывают разнообразные ресурсы из недр планет, необходимые для прокачки"
     },
+    {
+        builder: "Склад",
+        cost: [
+            { name: 'gold', count: 100, koef: 1.3838 },
+            { name: 'iron', count: 10, koef: 1.3838 },
+        ],
+        input: [
+            { name: 'coal', income: 0, koef: 'none', time: 'none' },
+            { name: 'gas', income: 0, koef: 'none', time: 'none' },
+            { name: 'oil', income: 0, koef: 'none', time: 'none' },
+            { name: 'slate', income: 0, koef: 'none', time: 'none' },
+            { name: 'turf', income: 0, koef: 'none', time: 'none' },
+            { name: 'uranium', income: 0, koef: 'none', time: 'none' },
+            
+            { name: 'iron', income: 0, koef: 'none', time: 'none' },
+            { name: 'golden', income: 0, koef: 'none', time: 'none' },
+            { name: 'artefact', income: 0, koef: 'none', time: 'none' },
+            { name: 'crystal', income: 0, koef: 'none', time: 'none' },
+        ],
+        output: [
+            { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
+        ],
+        require: [
+            { name: 'worker', limit: 1, koef: 0.01 }
+        ],
+        description: 'Здание где хранятся все добытые ресурсы с планеты'
+    },
+    {
+        builder: "Города",
+        cost: [
+            { name: 'gold', count: 100, koef: 1.3838 },
+            { name: 'iron', count: 10, koef: 1.3838 },
+        ],
+        input: [
+            { name: 'worker', income: 5, koef: 1.4, time: 'none' },
+        ],
+        output: [
+            { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
+        ],
+        require: [
+            { name: 'worker', limit: 1, koef: 0.01 }
+        ],
+        description: 'Место в котором отдыхают и живут рабочие'
+    },
     { 
         builder: "Электростанция",
         cost: [
@@ -44,20 +88,6 @@ export const buildin: Builder_Init[] = [
         description: 'Производит энергию из горючих ресурсов'
     },
     { 
-        builder: "Солнечная панель",
-        cost: [
-            { name: 'gold', count: 100000, koef: 1.3838 },
-            { name: 'iron', count: 1000, koef: 1.3838 },
-        ],
-        input: [
-            { name: 'energy', income: 5, koef: 1.5, time: 3600000 },
-        ],
-        require: [
-            { name: 'worker', limit: 1, koef: 0.01 }
-        ],
-        description: 'Бесконечно создаёт энергию от солнца'
-    },
-    { 
         builder: "Центробанк",
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
@@ -74,6 +104,24 @@ export const buildin: Builder_Init[] = [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
         description: 'Создаёт из золота шекели'
+    },
+    { 
+        builder: "Завод",
+        cost: [
+            { name: 'gold', count: 100, koef: 1.3838 },
+            { name: 'iron', count: 10, koef: 1.3838 },
+        ],
+        input: [
+            { name: 'iron', income: 5, koef: 1.5, time: 3600000 },
+        ],
+        output: [
+            { name: 'energy', outcome: 1, koef: 1.5, time: 3600000 },
+            { name: 'iron', outcome: 1, koef: 1.4, time: 3600000 },
+        ],
+        require: [
+            { name: 'worker', limit: 1, koef: 0.01 }
+        ],
+        description: 'Производит железо из железной руды'
     },
     {
         builder: "Археологический центр", 
@@ -104,51 +152,22 @@ export const buildin: Builder_Init[] = [
         ],
         description: 'Лаборатория позволяет производить исследования'
     },
+    { 
+        builder: "Солнечная панель",
+        cost: [
+            { name: 'gold', count: 100000, koef: 1.3838 },
+            { name: 'iron', count: 1000, koef: 1.3838 },
+        ],
+        input: [
+            { name: 'energy', income: 5, koef: 1.5, time: 3600000 },
+        ],
+        require: [
+            { name: 'worker', limit: 1, koef: 0.01 }
+        ],
+        description: 'Бесконечно создаёт энергию от солнца'
+    },
     //"Утилизатор": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'gold', smile: '💰', description: "Офис является штабом вашего бизнеса и фискирует прибыль в шекелях" },
-    {
-        builder: "Города",
-        cost: [
-            { name: 'gold', count: 100, koef: 1.3838 },
-            { name: 'iron', count: 10, koef: 1.3838 },
-        ],
-        input: [
-            { name: 'worker', income: 5, koef: 1.4, time: 'none' },
-        ],
-        output: [
-            { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
-        ],
-        require: [
-            { name: 'worker', limit: 1, koef: 0.01 }
-        ],
-        description: 'Место в котором отдыхают и живут рабочие'
-    },
-    {
-        builder: "Склад",
-        cost: [
-            { name: 'gold', count: 100, koef: 1.3838 },
-            { name: 'iron', count: 10, koef: 1.3838 },
-        ],
-        input: [
-            { name: 'coal', income: 0, koef: 'none', time: 'none' },
-            { name: 'gas', income: 0, koef: 'none', time: 'none' },
-            { name: 'oil', income: 0, koef: 'none', time: 'none' },
-            { name: 'slate', income: 0, koef: 'none', time: 'none' },
-            { name: 'turf', income: 0, koef: 'none', time: 'none' },
-            { name: 'uranium', income: 0, koef: 'none', time: 'none' },
-            
-            { name: 'iron', income: 0, koef: 'none', time: 'none' },
-            { name: 'golden', income: 0, koef: 'none', time: 'none' },
-            { name: 'artefact', income: 0, koef: 'none', time: 'none' },
-            { name: 'crystal', income: 0, koef: 'none', time: 'none' },
-        ],
-        output: [
-            { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
-        ],
-        require: [
-            { name: 'worker', limit: 1, koef: 0.01 }
-        ],
-        description: 'Здание где хранятся все добытые ресурсы с планеты'
-    },
+    
     //"Фабрика": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'energy', smile: '⚡', description: "Электростанция является источником энергии для вашего бизнеса в виде энергии" }
 ]
 
