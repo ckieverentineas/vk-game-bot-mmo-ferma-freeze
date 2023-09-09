@@ -6,6 +6,7 @@ import { Analyzer, Corporation, User } from "@prisma/client";
 import { Keyboard } from "vk-io";
 import { version_soft } from "./module/game/datacenter/system";
 import { Send_Message } from "./module/game/account/service";
+import { icotransl_list } from "./module/game/datacenter/resources_translator";
 
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
@@ -213,6 +214,43 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                     context.send(`🔧 ${cmd} ${field} ${action} ${value} error`)
                     console.error(`Ошибка: ${error.message}`);
                 });
+            } else {
+                await context.send(`Ошибка в команде, комилятор влом писать`)
+            }
+        }
+    })
+    hearManager.hear(/!cmall/gm, async (context: any) => {
+        // !cmd increment gold 19319319
+        //   0    1         2     3
+        if (context.senderId == 200840769 && context.text.split(' ').length == 4) {
+            const [cmd, action, field, value] = context.text.split(' ');
+            const operation_list = ['increment', 'decrement']
+            const target_list = ['gold', 'energy', 'iron', 'crystal']
+            let updateData: any = {};
+            if (operation_list.includes(action) && target_list.includes(field) && parseInt(value) > 0) {
+                if (action === "increment") {
+                    updateData[field] = {
+                      increment: parseFloat(value),
+                    };
+                  } else {
+                    updateData[field] = {
+                      decrement: parseFloat(value),
+                    };
+                }
+                let couinter = 0
+                const users_c = await prisma.user.count({})
+                await context.send(`Обнаружено пользователей ${users_c} для начисления ${icotransl_list[field].name} в размере ${value}${icotransl_list[field].smile}`)
+                for (const us of await prisma.user.findMany({})) {
+                    const res = await prisma.user.update({ where: { id: us.id }, data: updateData })
+                    if (res) {
+                        console.log(`Вам начислены ${icotransl_list[field].name} в размере ${value}${icotransl_list[field].smile} в качестве компенсации`)
+                        await Send_Message(us.idvk, `Вам начислены ${icotransl_list[field].name} в размере ${value}${icotransl_list[field].smile} в качестве компенсации`)
+                        couinter++
+                    } else  {
+                        console.log(`чтото не так с массовым начислением ${cmd}`)
+                    }
+                }
+                await context.send(`Уведомление доставлено ${couinter} пользователям из ${users_c}`)
             } else {
                 await context.send(`Ошибка в команде, комилятор влом писать`)
             }
