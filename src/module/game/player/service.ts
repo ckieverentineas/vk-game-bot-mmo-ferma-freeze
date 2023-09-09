@@ -4,6 +4,8 @@ import prisma from "../../prisma";
 import { Input, Output, Require } from "../datacenter/builder_config";
 import { Send_Message } from "../account/service";
 import Generator_Nickname from "../../../module/fab/generator_name";
+import { Randomizer_Float } from "../service";
+import { Rand_Int } from "../../../module/fab/random";
 
 export async function Time_Controller(context: Context, user: User, id_planet: number) {
     for (const builder of await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })) {
@@ -15,7 +17,7 @@ export async function Time_Controller(context: Context, user: User, id_planet: n
             'Города': City_Controller,
             'Склад': Storage_Controller,
             'Завод': Factory_Controller,
-            //'Археологический центр': Archaeological_Center_Controller,
+            'Археологический центр': Archaeological_Center_Controller,
             //'Лаборатория': Laboratory_Controller,
 
         }
@@ -304,7 +306,7 @@ async function Factory_Controller(context: Context, user: User, builder: Builder
     const outputs: Output[] = JSON.parse(builder.output)
     for (const output of outputs) {
         if (output.name == 'iron') {
-            const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'coal', datenow, dateold, global_koef)
+            const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'iron', datenow, dateold, global_koef)
             if ( data.income < inputs_storage[data.counter].income ) {
                 inputs_storage[data.counter].income -= data.income
             }
@@ -440,6 +442,65 @@ async function Storage_Controller(context: Context, user: User, builder: Builder
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
             ]).then(([]) => {
                 console.log('Успешное потребление Склада нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+}
+
+async function Archaeological_Center_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
+    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+    const inputs_storage: Input[] = JSON.parse(storage.input)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
+    const outputs: Output[] = JSON.parse(builder.output)
+    for (const output of outputs) {
+        if (output.name == 'artefact') {
+            const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'artefact', datenow, dateold, global_koef)
+            if ( data.income < inputs_storage[data.counter].income ) {
+                inputs_storage[data.counter].income -= data.income
+                const iron_art = await Randomizer_Float(0, 100)*data.income
+                const gold_art = await Randomizer_Float(0, 1000)*data.income
+                const energy_art = await Randomizer_Float(0, 10000)*data.income
+                const build = await Randomizer_Float(0, 1000) < 10 ? 1*Math.floor(data.income) : 0
+                const selector = await Rand_Int(2)
+                const speed_new = selector == 0 ? 0.001 : 0
+                const income_new = selector == 1 ? 1.01 : 1
+                await prisma.$transaction([
+                    prisma.worker.updateMany({ where: { id_user: user.id }, data: { income: { multiply: income_new }, speed: { increment: speed_new } } }),
+                    prisma.user.update({ where: { id: user.id }, data: { energy: { increment: energy_art },  gold: { increment: gold_art }, iron: { increment: iron_art }, update: datenow } }),
+                    prisma.planet.update({ where: { id: id_planet }, data: { update: datenow, build: { increment: build } } }),
+                ]).then(() => {
+                    //event_logger += `\n\n⌛ Работники получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.1' }:\n🏦 За прошедшее время прошло ${(koef_week/timer_week).toFixed(2)} дней.` 
+                    console.log(`C артефактов выпало: железа ${iron_art}, шекелей ${gold_art}, энергии ${energy_art} площадок ${build} ⌛ Работники ${user.idvk} получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.01%' }\n`);
+                })
+                .catch((error) => {
+                    //event_logger += `⌛ Произошла ошибка прокачки рабочих, попробуйте позже` 
+                    console.error(`Ошибка: ${error.message}`);
+                });
+            }
+        }
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление Археологического центра нафиг')
             })
             .catch((error) => {
                 //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
