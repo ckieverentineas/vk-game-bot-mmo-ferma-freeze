@@ -12,6 +12,7 @@ export const icotransl_list: { [key: string]: { name: string, smile: string } } 
     'worker': { name: 'Рабочие', smile: '👥'},
     'energy': { name: 'Энергия', smile: '⚡'},
     'gold': { name: 'Шекели', smile: '💰'},
+    'research': { name: 'Очки исследований', smile: '🧪'},
 }
 /*🔳🟦◾🟫◻▪🟨◽◼▫🟥⬜
 

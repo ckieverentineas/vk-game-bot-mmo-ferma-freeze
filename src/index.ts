@@ -149,7 +149,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		}
 		const datenow: Date = new Date()
 		const dateold: Date = new Date(trigger!.update)
-		if (user.limiter >= 100 && (Number(datenow) - Number(dateold)) < 600000 ) {
+		if (user.limiter >= 70 && (Number(datenow) - Number(dateold)) < 600000 ) {
 			await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
 			await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
 			await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 10 минут, мы вам сообщим о новом рабочем дне!')

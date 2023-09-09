@@ -18,7 +18,7 @@ export async function Time_Controller(context: Context, user: User, id_planet: n
             'Склад': Storage_Controller,
             'Завод': Factory_Controller,
             'Археологический центр': Archaeological_Center_Controller,
-            //'Лаборатория': Laboratory_Controller,
+            'Лаборатория': Laboratory_Controller,
 
         }
         try {
@@ -293,7 +293,7 @@ async function Factory_Controller(context: Context, user: User, builder: Builder
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
-    const inputs_mine: Input[] = JSON.parse(builder.input)
+    
 
     let global_koef = 0
     const requires: Require[] = JSON.parse(builder.require)
@@ -324,6 +324,7 @@ async function Factory_Controller(context: Context, user: User, builder: Builder
             });
         }
     }
+    const inputs_mine: Input[] = JSON.parse(builder.input)
     for (const input of inputs_mine) {
         if (input.name == 'iron') {
             console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
@@ -501,6 +502,55 @@ async function Archaeological_Center_Controller(context: Context, user: User, bu
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
             ]).then(([]) => {
                 console.log('Успешное потребление Археологического центра нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+}
+
+async function Laboratory_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+    const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
+    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    const datenow: Date = new Date()
+    const dateold: Date = new Date(builder.update)
+
+    let global_koef = 0
+    const requires: Require[] = JSON.parse(builder.require)
+    for (const require of requires) {
+        if (require.name == 'worker') {
+            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+        }
+    }
+    const outputs: Output[] = JSON.parse(builder.output)
+    for (const output of outputs) {
+        if (output.name == 'energy') {
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
+            ]).then(([]) => {
+                console.log('Успешное потребление Лабораторией нафиг')
+            })
+            .catch((error) => {
+                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                console.error(`Ошибка: ${error.message}`);
+            });
+        }
+    }
+    const inputs_mine: Input[] = JSON.parse(builder.input)
+    for (const input of inputs_mine) {
+        if (input.name == 'research') {
+            console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
+            const data = input.income * (Number(datenow)-Number(dateold))/input.time*global_koef
+            console.log(`Добавлено очков исследования: ${data}`)
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: user.id }, data: { research: { increment: data }, update: datenow } }),
+                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
+            ]).then(([]) => {
+                console.log('Успешная работа Лаборатории')
             })
             .catch((error) => {
                 //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 

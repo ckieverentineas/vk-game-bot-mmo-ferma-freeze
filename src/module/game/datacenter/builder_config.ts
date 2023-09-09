@@ -141,11 +141,14 @@ export const buildin: Builder_Init[] = [
     {
         builder: "Лаборатория",
         cost: [
-            { name: 'gold', count: 100, koef: 1.3838 },
-            { name: 'iron', count: 10, koef: 1.3838 },
+            { name: 'gold', count: 1000, koef: 1.3838 },
+            { name: 'iron', count: 500, koef: 1.3838 },
+        ],
+        input: [
+            { name: 'research', income: 1, koef: 0.1, time: 86400000 },
         ],
         output: [
-            { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
+            { name: 'energy', outcome: 5, koef: 1.4, time: 3600000 },
         ],
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }

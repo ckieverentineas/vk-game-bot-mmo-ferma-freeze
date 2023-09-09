@@ -96,14 +96,14 @@ async function Builder_Finder(need: string) {
 async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: number, fisrt_buildin: boolean): Promise<{message: string, gold: number, iron: number, status: boolean}> {
     let event_logger = { message: '', gold: 0, iron: 0, status: true}
     const planet_check = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (planet_check) {
+    if (planet_check && fisrt_buildin) {
         const builder_count = await prisma.builder.count({ where: { id_planet: planet_check.id } } )
         if (builder_count < planet_check.build) {
             event_logger.message = `✅ Свободно площадок на планете ${builder_count}/${planet_check.build}\n`
         } else {
             event_logger.message = `⛔ Занято площадок на планете ${builder_count}/${planet_check.build}\n`
-            if (fisrt_buildin) { event_logger.status = false; return event_logger}
-            
+            event_logger.status = false;
+            return event_logger
         }
     }
     for (const data of build.cost) {
@@ -131,6 +131,15 @@ async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: numb
         }
     }
     event_logger.message
+    return event_logger
+}
+
+async function Limiter_Lvl(builder: Builder) {
+    const event_logger = { message: '', status: true}
+    if (builder.lvl > 9) {
+        event_logger.status = false
+        event_logger.message = '⛔ Достигнут максимальный уровень'
+    }
     return event_logger
 }
 async function Builder_Calculation(name_sel: string, lvl: number) {
@@ -239,8 +248,9 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
         const build_calc: Builder_Init = await Builder_Calculation(sel.builder, builder.lvl)
         if (!build_calc) { return }
         const build_checker = await Builder_Add_Check(user, build_calc, id_planet, false)
+        const build_lvl_checker = await Limiter_Lvl(builder)
         if (context.eventPayload.status == "ok") {
-            if (build_checker.status) {
+            if (build_checker.status && build_lvl_checker.status) {
                 const golden_cost = await Costing_Finder(JSON.parse(builder.costing), 'gold')
                 if (!golden_cost) { return }
                 const iron_cost = await Costing_Finder(JSON.parse(builder.costing), 'iron')
@@ -259,7 +269,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
                     console.error(`Ошибка: ${error.message}`);
                 });
             } else {
-                event_logger += `\n На вашем банковском счете недостает ${build_checker.message} шекелей.`
+                event_logger += `\n${build_checker.message}\n ${build_lvl_checker.message}.`
             }
         } else {
             event_logger = `Вы уверены, что хотите улучшить здание ${builder.name}-${builder.id} за -->\n💰 Шекеля: ${build_checker.gold.toFixed(2)} при балансе ${user.gold.toFixed(2)}\n📏 Железо нафиг: ${build_checker.iron.toFixed(2)} при балансе ${user.iron.toFixed(2)}?\n\n Параметры вырастут следующим образом:\n\n`

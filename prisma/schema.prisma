@@ -14,9 +14,10 @@ model User {
   lvl            Int        @default(1)
   xp             Float      @default(0)
   gold           Float      @default(350)
-  iron Float @default(350)
+  iron           Float      @default(350)
   crystal        Int        @default(0)
   energy         Float      @default(0)
+  research       Float      @default(0)
   reputation     Float      @default(0)
   status         String     @default("player")
   limiter        Int        @default(0)
@@ -27,6 +28,7 @@ model User {
   Worker         Worker[]
   Trigger        Trigger[]
   Analyzer       Analyzer[]
+  Research       Research[]
 }
 
 model System {
@@ -37,7 +39,7 @@ model System {
 }
 
 model Planet {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
   name String
 
   coal    Float
@@ -51,33 +53,34 @@ model Planet {
   golden  Float
   crystal Float
 
-  build    Int @default(7)
+  build    Int   @default(7)
   artefact Float
 
   id_user   Int?
   id_system Int
   crdate    DateTime @default(now())
   update    DateTime @default(now())
-  system      System   @relation(fields: [id_system], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  system    System   @relation(fields: [id_system], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Builder {
-  id        Int      @id @default(autoincrement())
-  name      String
-  lvl       Int      @default(1)
-  type      String   @default("energy")
-  income    Float    @default(1)
-  cost      Float    @default(100)
-  worker    Int      @default(1)
-  costing      String @default("empty")
-  input      String @default("empty")
-  output      String @default("empty")
-  require      String @default("empty")
-  id_user   Int
-  id_planet Int?
-  crdate    DateTime @default(now())
-  update    DateTime @default(now())
-  user      User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id         Int      @id @default(autoincrement())
+  name       String
+  lvl        Int      @default(1)
+  type       String   @default("energy")
+  income     Float    @default(1)
+  cost       Float    @default(100)
+  worker     Int      @default(1)
+  costing    String   @default("empty")
+  input      String   @default("empty")
+  output     String   @default("empty")
+  require    String   @default("empty")
+  id_user    Int
+  id_planet  Int?
+  upgradeble Boolean  @default(true)
+  crdate     DateTime @default(now())
+  update     DateTime @default(now())
+  user       User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Corporation_Builder {
@@ -149,4 +152,14 @@ model Analyzer {
   user      User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
   id_user   Int
   crdate    DateTime @default(now())
+}
+
+model Research {
+  id      Int      @id @default(autoincrement())
+  name    String
+  lvl     Int
+  user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id_user Int
+  crdate  DateTime @default(now())
+  update  DateTime @default(now())
 }
