@@ -1,6 +1,7 @@
 export const buildin: Builder_Init[] = [
     { 
         builder: "Шахты",
+        description: "Добывают разнообразные ресурсы из недр планет, необходимые для прокачки",
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -24,10 +25,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: "Добывают разнообразные ресурсы из недр планет, необходимые для прокачки"
+        upgradeble: true
     },
     {
         builder: "Склад",
+        description: 'Здание где хранятся все добытые ресурсы с планеты',
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -51,10 +53,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Здание где хранятся все добытые ресурсы с планеты'
+        upgradeble: false
     },
     {
         builder: "Города",
+        description: 'Место в котором отдыхают и живут рабочие',
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -68,10 +71,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Место в котором отдыхают и живут рабочие'
+        upgradeble: true
     },
     { 
         builder: "Электростанция",
+        description: 'Производит энергию из горючих ресурсов',
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -85,10 +89,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Производит энергию из горючих ресурсов'
+        upgradeble: true
     },
     { 
         builder: "Центробанк",
+        description: 'Создаёт из золота шекели',
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -103,10 +108,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Создаёт из золота шекели'
+        upgradeble: true
     },
     { 
         builder: "Завод",
+        description: 'Производит железо из железной руды',
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -121,10 +127,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Производит железо из железной руды'
+        upgradeble: true
     },
     {
-        builder: "Археологический центр", 
+        builder: "Археологический центр",
+        description: 'Археологический центр позволяет открывать артефакты, из которых могут выпасть даже площадки к планетам',
         cost: [
             { name: 'gold', count: 100, koef: 1.3838 },
             { name: 'iron', count: 10, koef: 1.3838 },
@@ -136,10 +143,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Археологический центр позволяет открывать артефакты, из которых могут выпасть даже площадки к планетам'
+        upgradeble: false
     },
     {
         builder: "Лаборатория",
+        description: 'Лаборатория позволяет производить исследования',
         cost: [
             { name: 'gold', count: 1000, koef: 1.3838 },
             { name: 'iron', count: 500, koef: 1.3838 },
@@ -153,10 +161,11 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Лаборатория позволяет производить исследования'
+        upgradeble: true
     },
     { 
         builder: "Солнечная панель",
+        description: 'Бесконечно создаёт энергию от солнца',
         cost: [
             { name: 'gold', count: 100000, koef: 1.3838 },
             { name: 'iron', count: 1000, koef: 1.3838 },
@@ -167,7 +176,7 @@ export const buildin: Builder_Init[] = [
         require: [
             { name: 'worker', limit: 1, koef: 0.01 }
         ],
-        description: 'Бесконечно создаёт энергию от солнца'
+        upgradeble: true
     },
     //"Утилизатор": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'gold', smile: '💰', description: "Офис является штабом вашего бизнеса и фискирует прибыль в шекелях" },
     
@@ -181,6 +190,7 @@ export interface Builder_Init {
     output?: Output[];
     require: Require[];
     description: string;
+    upgradeble: boolean;
 }
 
 export interface Builder_Set {

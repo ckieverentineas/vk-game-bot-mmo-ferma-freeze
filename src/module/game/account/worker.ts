@@ -24,11 +24,12 @@ export async function Worker_Control(context: Context, user: User) {
     const worker = worker_list[cur]
     if (worker_list.length > 0) {
         let builder: Builder | null = Finder_Builder(builder_list, worker)
-        keyboard.callbackButton({ label: '🎓 Обучить', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: cur, target: worker.id  }, color: 'secondary' }).row()
-        .callbackButton({ label: '👣 Место работы', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: cur, target: worker.id }, color: 'secondary' }).row()
+        keyboard
+        .callbackButton({ label: '🎓 Обучить', payload: { command: 'worker_controller', command_sub: 'worker_upgrade', office_current: cur, target: worker.id  }, color: 'secondary' }).row()
+        //.callbackButton({ label: '👣 Место работы', payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: cur, target: worker.id }, color: 'secondary' }).row()
         .callbackButton({ label: '💥 Уволить', payload: { command: 'worker_controller', command_sub: 'worker_destroy', office_current: cur, target: worker.id }, color: 'secondary' }).row()
-        .callbackButton({ label: '👀 Авто ИИ', payload: { command: 'worker_controller', command_sub: 'worker_config', office_current: cur, target: worker.id }, color: 'secondary' }).row()
-        event_logger +=`💬 Работник: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(3)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n\n${builder_list.length > 1 ? `~~~~ ${1+cur} из ${worker_list.length} ~~~~` : ''}`;
+        //.callbackButton({ label: '👀 Авто ИИ', payload: { command: 'worker_controller', command_sub: 'worker_config', office_current: cur, target: worker.id }, color: 'secondary' }).row()
+        event_logger +=`💬 Работник: ${worker.name}-${worker.id}\n📈 Уровень: ${worker.lvl}\n📗 Опыт: ${worker.xp.toFixed(2)}\n⚡ Прибыль: ${worker.income.toFixed(2)}\n🧭 Скорость работы: ${worker.speed.toFixed(3)}\n🤑 Зарплата: ${worker.salary.toFixed(2)}\n💰 Заработано: ${worker.gold.toFixed(2)}\n🤝 Отношение к боссу: ${worker.reputation.toFixed(2)}\n⭐ Очки обучения: ${worker.point}\n👣 Место работы: ${builder ? `${builder.name}-${builder.id}` : `Фриланс`}\n🌎 Геолокация: ${await prisma.planet.findFirst({ where: { id: worker.id_planet || -1 } }) ? `Планета-${worker.id_planet}` : 'Фиг знает'}\n\n${worker_list.length > 1 ? `~~~~ ${1+cur} из ${worker_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не наняли рабочих, как насчет кого-то нанять?`
     }
