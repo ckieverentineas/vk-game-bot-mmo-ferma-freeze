@@ -1,13 +1,14 @@
-import { User, Builder, Planet } from "@prisma/client"
+import { User, Builder, Planet, Corporation, Corporation_Builder } from "@prisma/client"
 import { Context } from "vk-io"
 import prisma from "../../prisma";
 import { Input, Output, Require } from "../datacenter/builder_config";
-import { Send_Message } from "../account/service";
 import Generator_Nickname from "../../../module/fab/generator_name";
 import { Randomizer_Float } from "../service";
 import { Rand_Int } from "../../../module/fab/random";
+import { icotransl_list } from "../datacenter/resources_translator";
 
-export async function Time_Controller(context: Context, user: User, id_planet: number) {
+export async function Time_Controller(context: Context, user: User, id_planet: number): Promise<string | undefined> {
+    let calc = ''
     for (const builder of await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })) {
         const config: Builder_Selector = {
             'Шахты': Mine_Controller,
@@ -22,15 +23,17 @@ export async function Time_Controller(context: Context, user: User, id_planet: n
 
         }
         try {
-            await config[builder.name](context, user, builder, id_planet)
+            calc += await config[builder.name](user, builder, id_planet)
+            console.log(`Запуск обработки ${builder.name} для пользователя ${context.peerId} на планете ${id_planet}`)
         } catch (e) {
             console.log(`Нет такой постройки  ${e}`)
+
         }
-        
     } 
+    return calc
 }
 type Builder_Selector = {
-    [key: string]: (context: Context, user: User, builder: Builder, id_planet: number) => Promise<void>;
+    [key: string]: (user: User, builder: Builder, id_planet: number) => Promise<string>;
 }
 
 async function Resource_Finder_Nafig(input_storage: Input[], input_mine: Input, target: string, datenow: Date, dateold: Date, global_koef: number) {
@@ -46,11 +49,12 @@ async function Resource_Finder_Nafig(input_storage: Input[], input_mine: Input, 
     return data
 }
 
-async function Mine_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Mine_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
@@ -129,6 +133,7 @@ async function Mine_Controller(context: Context, user: User, builder: Builder, i
             });
         }
     }
+    return event_logger
 }
 
 async function Resource_Finder_Nafig_Outcome(input_storage: Input[], input_mine: Output, target: string, datenow: Date, dateold: Date, global_koef: number) {
@@ -143,11 +148,12 @@ async function Resource_Finder_Nafig_Outcome(input_storage: Input[], input_mine:
     }
     return data
 }
-async function Powerstation_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Powerstation_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
@@ -187,13 +193,14 @@ async function Powerstation_Controller(context: Context, user: User, builder: Bu
                 console.error(`Ошибка: ${error.message}`);
             });
         }
-        
     }
+    return event_logger
 }
 
-async function Powerstation_Solar_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Powerstation_Solar_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_mine: Input[] = JSON.parse(builder.input)
@@ -222,15 +229,16 @@ async function Powerstation_Solar_Controller(context: Context, user: User, build
                 console.error(`Ошибка: ${error.message}`);
             });
         }
-        
     }
+    return event_logger
 }
 
-async function Central_Bank_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Central_Bank_Controller(user: User, builder: Builder, id_planet: number): Promise<string> {
+    let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
@@ -242,21 +250,28 @@ async function Central_Bank_Controller(context: Context, user: User, builder: Bu
         if (require.name == 'worker') {
             const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
             global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
+            if (worker_check != Math.floor(require.limit)) {
+                event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
+            }
         }
     }
     const outputs: Output[] = JSON.parse(builder.output)
+    event_logger += `🔔 ${builder.name}-${builder.id}: \n`
     for (const output of outputs) {
         if (output.name == 'golden') {
             const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'coal', datenow, dateold, global_koef)
             if ( data.income < inputs_storage[data.counter].income ) {
                 inputs_storage[data.counter].income -= data.income
+                event_logger += ` -${data.income.toFixed(2)}${icotransl_list[output.name].smile} `
             }
         }
         if (output.name == 'energy') {
+            const energy_used = output.outcome * (Number(datenow)-Number(dateold))/output.time
             await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: output.outcome * (Number(datenow)-Number(dateold))/output.time}, update: datenow } }),
+                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: energy_used}, update: datenow } }),
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
             ]).then(([]) => {
+                event_logger += ` -${energy_used.toFixed(2)}${icotransl_list[output.name].smile} `
                 console.log('Успешное потребление Центробанка нафиг')
             })
             .catch((error) => {
@@ -265,16 +280,19 @@ async function Central_Bank_Controller(context: Context, user: User, builder: Bu
             });
         }
     }
+    let gold_bonus = 0
     for (const input of inputs_mine) {
         if (input.name == 'gold') {
             console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
             const data = input.income * (Number(datenow)-Number(dateold))/input.time*global_koef
+            gold_bonus = data
             console.log(`Добавлено шекелей: ${data}`)
             await prisma.$transaction([
                 prisma.user.update({ where: { id: user.id }, data: { gold: { increment: data }, update: datenow } }),
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
+                event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
                 console.log('Успешная работа Центробанка')
             })
             .catch((error) => {
@@ -283,13 +301,39 @@ async function Central_Bank_Controller(context: Context, user: User, builder: Bu
             });
         }
     }
+    const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
+    const corp_build: Corporation_Builder[] = await prisma.corporation_Builder.findMany({ where: { id_corporation: user.id_corporation } })
+    if (!corp_build || !corp) { return event_logger }
+    let gold_bonus_user = 0
+    let gold_bonus_corp = 0
+    for (const buildcorp of corp_build) {
+        if (builder.name == "Банк") {
+            gold_bonus_user = gold_bonus * (buildcorp.income/100)
+        }
+        if (builder.name == "Фабрикатор") {
+            gold_bonus_corp = gold_bonus * (buildcorp.income/100)
+        }
+    }
+    await prisma.$transaction([
+        prisma.user.update({ where: { id: user.id }, data: { gold: { increment: gold_bonus_user } } }),
+        prisma.corporation.update({ where: { id: user.id_corporation }, data: { gold: { increment: gold_bonus_user }}})
+    ]).then(([]) => {
+        event_logger += gold_bonus_corp ? `\n🌐 ${corp.name} получает от ${builder.name}-${builder.id} +${gold_bonus_corp }${icotransl_list['gold'].smile}` : ''
+        event_logger += gold_bonus_user ? `\n🌐 ${corp.name} перечисляет в ${builder.name}-${builder.id} +${gold_bonus_user }${icotransl_list['gold'].smile}` : ''
+    })
+    .catch((error) => {
+        event_logger = `⌛ Произошла ошибка предоставления отчета о прибыли, попробуйте позже` 
+        console.error(`Ошибка: ${error.message}`);
+    });
+    return event_logger
 }
 
-async function Factory_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Factory_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
@@ -343,11 +387,13 @@ async function Factory_Controller(context: Context, user: User, builder: Builder
             });
         }
     }
+    return event_logger
 }
 
-async function City_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function City_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_mine: Input[] = JSON.parse(builder.input)
@@ -428,11 +474,13 @@ async function City_Controller(context: Context, user: User, builder: Builder, i
             }
         }
     }
+    return event_logger
 }
 
-async function Storage_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Storage_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const outputs: Output[] = JSON.parse(builder.output)
@@ -450,13 +498,15 @@ async function Storage_Controller(context: Context, user: User, builder: Builder
             });
         }
     }
+    return event_logger
 }
 
-async function Archaeological_Center_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Archaeological_Center_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { await Send_Message(context.peerId, 'Але, у вас склада нет на базе, вы дома?'); return }
+    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
     const inputs_storage: Input[] = JSON.parse(storage.input)
@@ -509,11 +559,13 @@ async function Archaeological_Center_Controller(context: Context, user: User, bu
             });
         }
     }
+    return event_logger
 }
 
-async function Laboratory_Controller(context: Context, user: User, builder: Builder, id_planet: number) {
+async function Laboratory_Controller(user: User, builder: Builder, id_planet: number) {
+    let event_logger = ''
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { await Send_Message(context.peerId, 'Але, у вас планеты нет на базе, вы дома?'); return }
+    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
 
@@ -558,4 +610,5 @@ async function Laboratory_Controller(context: Context, user: User, builder: Buil
             });
         }
     }
+    return event_logger
 }

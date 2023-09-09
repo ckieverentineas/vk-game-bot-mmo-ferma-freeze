@@ -16,7 +16,8 @@ export async function Planet_Control(context: Context, user: User) {
     let event_logger = `❄ Отдел управления планетами:\n\n`
     let cur = context.eventPayload.current_object ?? 0
     const planet = planet_list[cur]
-    await Time_Controller(context, user, planet.id)
+    const services_ans = await Time_Controller(context, user, planet.id)
+    console.log(services_ans)
     if (planet_list.length > 0) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
@@ -27,6 +28,7 @@ export async function Planet_Control(context: Context, user: User) {
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`
     }
+    event_logger += `Отчеты:\n${services_ans}`
     //предыдущий обьект
     if (planet_list.length > 1 && cur > 0) {
         keyboard.callbackButton({ label: '←', payload: { command: 'planet_control', current_object: cur-1 }, color: 'secondary' })
@@ -86,7 +88,7 @@ async function Planet_Add(context: Context, user: User, ) {
 					iron: await Randomizer_Float(1000000, 1000000*(planet_counter+2)),
 					golden: await Randomizer_Float(1000000, 1000000*(planet_counter+2)),
 					artefact: Math.floor(await Randomizer_Float(100, 100*(planet_counter+2))),
-					crystal: Math.floor(await Randomizer_Float(10, 100))
+					crystal: Math.floor(await Randomizer_Float(0, 5))
 				} }),
                 prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: price_new } } }),
 				prisma.system.update({ where: { id: 1}, data: { planet: { decrement: 1 } } })
