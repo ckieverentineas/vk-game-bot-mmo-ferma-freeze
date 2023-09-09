@@ -8,16 +8,14 @@ import { icotransl_list } from "../datacenter/resources_translator";
 
 export async function Builder_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    let event_logger = `❄ Отдел управления сооружениями:\n\n`
     let id_builder_sent = context.eventPayload.id_builder_sent ?? 0
     let id_planet = context.eventPayload.id_planet ?? 0
+    let event_logger = `❄ Отдел управления сооружениями на планете ${id_planet}:\n\n`
     const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { lvl: "asc" } })
     const builder = builder_list[id_builder_sent]
     if (builder_list.length > 0) {
         //const sel = buildin[0]
-        const lvl_new = builder.lvl+1
-        const price_new = 2*(lvl_new**2)
-        keyboard.callbackButton({ label: `🔧 ${price_new.toFixed(2)}💰`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: `🔧 Улучшить`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
         .callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         const costs: Cost[] = JSON.parse(builder.costing)
@@ -41,6 +39,9 @@ export async function Builder_Control(context: Context, user: User) {
         for (const require of requires) {
             event_logger += `${icotransl_list[require.name].smile} ${icotransl_list[require.name].name} --> ${require.limit.toFixed(0)}\n`
         }
+        const build_calc = await Builder_Calculation(builder.name, builder.lvl)
+        event_logger += `\n📐 При улучшении: \n`
+        event_logger += (await Builder_Add_Check(user, build_calc, id_planet, false)).message
         event_logger +=`\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
@@ -92,7 +93,7 @@ async function Builder_Finder(need: string) {
     }
     return false
 }
-async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: number): Promise<{message: string, gold: number, iron: number, status: boolean}> {
+async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: number, fisrt_buildin: boolean): Promise<{message: string, gold: number, iron: number, status: boolean}> {
     let event_logger = { message: '', gold: 0, iron: 0, status: true}
     const planet_check = await prisma.planet.findFirst({ where: { id: id_planet } })
     if (planet_check) {
@@ -101,29 +102,29 @@ async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: numb
             event_logger.message = `✅ Свободно площадок на планете ${builder_count}/${planet_check.build}\n`
         } else {
             event_logger.message = `⛔ Занято площадок на планете ${builder_count}/${planet_check.build}\n`
-            event_logger.status = false
-            return event_logger
+            if (fisrt_buildin) { event_logger.status = false; return event_logger}
+            
         }
     }
     for (const data of build.cost) {
         if (data.name == 'gold') {
             if (user.gold > data.count) {
-                event_logger.message += `✅ Будет списан ресурс ${data.name} в количестве ${data.count}, на балансе останется: ${(user.gold - data.count).toFixed(2)}\n`
+                event_logger.message += `✅ Будет списан ресурс ${icotransl_list[data.name].smile} в количестве ${data.count.toFixed(2)}, на балансе останется: ${(user.gold - data.count).toFixed(2)}\n`
                 event_logger.gold += data.count
                 continue
             } else {
-                event_logger.message += `⛔ Вам не хватает ${data.name} в размере ${(data.count - user.gold).toFixed(2)}\n`
+                event_logger.message += `⛔ Вам не хватает ${icotransl_list[data.name].smile} в размере ${(data.count - user.gold).toFixed(2)}\n`
                 event_logger.status = false
                 return event_logger
             }
         }
         if (data.name == 'iron') {
             if (user.iron > data.count) {
-                event_logger.message += `✅ Будет списан ресурс ${data.name} в количестве ${data.count}, на балансе останется: ${(user.iron - data.count).toFixed(2)}\n`
+                event_logger.message += `✅ Будет списан ресурс ${icotransl_list[data.name].smile} в количестве ${data.count.toFixed(2)}, на балансе останется: ${(user.iron - data.count).toFixed(2)}\n`
                 event_logger.iron += data.count
                 continue
             } else {
-                event_logger.message += `⛔ Вам не хватает ${data.name} в размере ${(data.count - user.iron).toFixed(2)}\n`
+                event_logger.message += `⛔ Вам не хватает ${icotransl_list[data.name].smile} в размере ${(data.count - user.iron).toFixed(2)}\n`
                 event_logger.status = false
                 return event_logger
             }
@@ -175,7 +176,7 @@ async function Builder_Add(context: Context, user: User, target: number) {
         const sel: Builder_Set | false = await Builder_Finder(context.eventPayload.selector)
         if (sel) {
             const build_calc = await Builder_Calculation(sel.builder, 0)
-            const build_checker = await Builder_Add_Check(user, build_calc, id_planet)
+            const build_checker = await Builder_Add_Check(user, build_calc, id_planet, true)
             if (build_checker.status) {
                 await prisma.$transaction([
                     prisma.builder.create({ data: { id_user: user.id, name: build_calc.builder, costing: JSON.stringify(build_calc.cost), input: JSON.stringify(build_calc.input) ?? '', output: JSON.stringify(build_calc.output) || '', require: JSON.stringify(build_calc.require), id_planet: id_planet } }),
@@ -199,7 +200,7 @@ async function Builder_Add(context: Context, user: User, target: number) {
             const builder = buildin[i]
             keyboard.callbackButton({ label: `➕ ${builder.builder}`, payload: { command: 'builder_controller', command_sub: 'builder_add', office_current: 0, id_builder_sent: id_builder_sent, target: target, selector: builder.builder, id_planet: id_planet }, color: 'secondary' }).row()
             event_logger += `\n\n💬 Здание: ${builder.builder}\n ${builder.description}\n`;
-            event_logger += (await Builder_Add_Check(user, builder, id_planet)).message
+            event_logger += (await Builder_Add_Check(user, builder, id_planet, true)).message
             counter++
         }
         event_logger += `\n\n${buildin.length > 1 ? `~~~~ ${cur + buildin.length > cur+limiter ? limiter : limiter-(buildin.length-cur)} из ${buildin.length} ~~~~` : ''}`
@@ -237,7 +238,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
         if (!sel) { return }
         const build_calc: Builder_Init = await Builder_Calculation(sel.builder, builder.lvl)
         if (!build_calc) { return }
-        const build_checker = await Builder_Add_Check(user, build_calc, id_planet)
+        const build_checker = await Builder_Add_Check(user, build_calc, id_planet, false)
         if (context.eventPayload.status == "ok") {
             if (build_checker.status) {
                 const golden_cost = await Costing_Finder(JSON.parse(builder.costing), 'gold')
