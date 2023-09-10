@@ -42,8 +42,10 @@ export async function Builder_Control(context: Context, user: User) {
             event_logger += `${icotransl_list[require.name].smile} ${icotransl_list[require.name].name} --> ${require.limit.toFixed(0)}\n`
         }
         const build_calc = await Builder_Calculation(builder.name, builder.lvl)
-        event_logger += `\n📐 При улучшении: \n`
-        event_logger += (await Builder_Add_Check(user, build_calc, id_planet, false)).message
+        if (builder.upgradeble) {
+            event_logger += `\n📐 При улучшении: \n`
+            event_logger += (await Builder_Add_Check(user, build_calc, id_planet, false)).message
+        }
         event_logger +=`\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`

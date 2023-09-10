@@ -677,5 +677,23 @@ async function Laboratory_Controller(user: User, builder: Builder, id_planet: nu
             });
         }
     }
+    const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
+    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
+    const inputs_storage: Input[] = JSON.parse(storage.input)
+    const output: Output = { name: 'crystal', outcome: 1, koef: 0, time: 0}
+    const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'crystal', datenow, dateold, global_koef)
+    const crystal_need = Math.floor(output.outcome)
+    if ( crystal_need < inputs_storage[data.counter].income && inputs_storage[data.counter].income >= 1 ) {
+        inputs_storage[data.counter].income -= crystal_need
+        await prisma.$transaction([
+            prisma.user.update({ where: { id: user.id }, data: { crystal: { increment: crystal_need }, update: datenow } }),
+            prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
+        ]).then(() => {
+            event_logger += ` +${crystal_need.toFixed(2)}${icotransl_list['crystal'].smile} ` 
+        })
+        .catch((error) => {
+            console.error(`Ошибка: ${error.message}`);
+        });
+    }
     return `${event_logger}\n`
 }
