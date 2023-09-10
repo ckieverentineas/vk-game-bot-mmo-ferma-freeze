@@ -8,6 +8,7 @@ import { Rand_Int } from "../../../module/fab/random";
 import { icotransl_list } from "../datacenter/resources_translator";
 import { Send_Message } from "../../../module/fab/helper";
 import { chat_id } from "../../../index";
+import { Update_Statistics } from "./statistics";
 
 export async function Time_Controller(context: Context, user: User, id_planet: number): Promise<string | undefined> {
     let calc = ''
@@ -126,6 +127,7 @@ async function Mine_Controller(user: User, builder: Builder, id_planet: number) 
         prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
         prisma.planet.update({ where: { id: id_planet }, data: { coal: { decrement: income_wil.coal }, gas: { decrement: income_wil.gas }, oil: { decrement: income_wil.oil }, slate: { decrement: income_wil.slate }, turf: { decrement: income_wil.turf }, uranium: { decrement: income_wil.uranium }, iron: { decrement: income_wil.iron }, golden: { decrement: income_wil.golden }, artefact: { decrement: income_wil.artefact }, crystal: { decrement: income_wil.crystal } } })
     ]).then(([]) => {
+        Update_Statistics(user, [{ name: 'golden', value: income_wil.golden}, { name: 'coal', value: income_wil.coal }, { name: 'gas', value: income_wil.gas }, { name: 'oil', value: income_wil.oil }, { name: 'uranium', value: income_wil.uranium } ])
         console.log('Успешная добыча ресов нафиг')
     })
     .catch((error) => {
@@ -209,6 +211,7 @@ async function Powerstation_Controller(user: User, builder: Builder, id_planet: 
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
                 event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                Update_Statistics(user, [{ name: 'energy', value: data} ])
                 console.log('Успешная работа электростанции')
             })
             .catch((error) => {
@@ -250,6 +253,7 @@ async function Powerstation_Solar_Controller(user: User, builder: Builder, id_pl
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
             ]).then(([]) => {
                 event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                Update_Statistics(user, [{ name: 'energy', value: data} ])
                 console.log('Успешная работа солнечной электростанции')
             })
             .catch((error) => {
@@ -321,6 +325,7 @@ async function Central_Bank_Controller(user: User, builder: Builder, id_planet: 
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
                 event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                Update_Statistics(user, [{ name: 'gold', value: data} ])
                 console.log('Успешная работа Центробанка')
             })
             .catch((error) => {
@@ -330,9 +335,7 @@ async function Central_Bank_Controller(user: User, builder: Builder, id_planet: 
         }
     }
     const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
-    console.log(corp)
     const corp_build: Corporation_Builder[] = await prisma.corporation_Builder.findMany({ where: { id_corporation: user.id_corporation } })
-    console.log(corp_build)
     if (corp_build.length < 1 || !corp) { return event_logger }
     let gold_bonus_user = 0
     let gold_bonus_corp = 0
@@ -420,6 +423,7 @@ async function Factory_Controller(user: User, builder: Builder, id_planet: numbe
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
                 event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                Update_Statistics(user, [{ name: 'iron', value: data} ])
                 console.log('Успешная работа Завода')
             })
             .catch((error) => {
@@ -596,6 +600,7 @@ async function Archaeological_Center_Controller(user: User, builder: Builder, id
                         Send_Message(chat_id, `Поздравляем [https://vk.com/id${user.idvk}|${user.name}] c прокачкой Планеты-${planet.id} на ${build} площадки`)
                     }
                     event_logger += `${icotransl_list[output.name].smile} +${iron_art.toFixed(2)}${icotransl_list['iron'].smile}, +${gold_art.toFixed(2)}${icotransl_list['gold'].smile}, +${energy_art.toFixed(2)}${icotransl_list['energy'].smile} +${build}⚒ 👥${count_worker} --> ${speed_new > 0 ? '+0.001🧭' : '*0.01%📈' }\n` 
+                    Update_Statistics(user, [{ name: 'artefact', value: art_need} ])
                     console.log(`C артефактов выпало: железа ${iron_art}, шекелей ${gold_art}, энергии ${energy_art} площадок ${build} ⌛ Работники ${user.idvk} получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.01%' }\n`);
                 })
                 .catch((error) => {
@@ -690,6 +695,7 @@ async function Laboratory_Controller(user: User, builder: Builder, id_planet: nu
             prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
         ]).then(() => {
             event_logger += ` +${crystal_need.toFixed(2)}${icotransl_list['crystal'].smile} ` 
+            Update_Statistics(user, [{ name: 'crystal', value: crystal_need} ])
         })
         .catch((error) => {
             console.error(`Ошибка: ${error.message}`);

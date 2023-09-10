@@ -8,27 +8,28 @@ datasource db {
 }
 
 model User {
-  id             Int        @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   idvk           Int
   name           String
-  lvl            Int        @default(1)
-  xp             Float      @default(0)
-  gold           Float      @default(5000)
-  iron           Float      @default(500)
-  crystal        Int        @default(0)
-  energy         Float      @default(1000)
-  research       Float      @default(0)
-  reputation     Float      @default(0)
-  status         String     @default("player")
-  limiter        Int        @default(0)
-  id_corporation Int        @default(0)
-  crdate         DateTime   @default(now())
-  update         DateTime   @default(now())
+  lvl            Int          @default(1)
+  xp             Float        @default(0)
+  gold           Float        @default(5000)
+  iron           Float        @default(500)
+  crystal        Int          @default(0)
+  energy         Float        @default(1000)
+  research       Float        @default(0)
+  reputation     Float        @default(0)
+  status         String       @default("player")
+  limiter        Int          @default(0)
+  id_corporation Int          @default(0)
+  crdate         DateTime     @default(now())
+  update         DateTime     @default(now())
   Bulder         Builder[]
   Worker         Worker[]
   Trigger        Trigger[]
   Analyzer       Analyzer[]
   Research       Research[]
+  Statistics     Statistics[]
 }
 
 model System {
@@ -154,6 +155,18 @@ model Research {
   id      Int      @id @default(autoincrement())
   name    String
   lvl     Int
+  user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id_user Int
+  crdate  DateTime @default(now())
+  update  DateTime @default(now())
+}
+
+model Statistics {
+  id      Int      @id @default(autoincrement())
+  all     String
+  day     String
+  week    String
+  month   String
   user    User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)
   id_user Int
   crdate  DateTime @default(now())
