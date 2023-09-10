@@ -6,6 +6,8 @@ import Generator_Nickname from "../../../module/fab/generator_name";
 import { Randomizer_Float } from "../service";
 import { Rand_Int } from "../../../module/fab/random";
 import { icotransl_list } from "../datacenter/resources_translator";
+import { Send_Message } from "../../../module/fab/helper";
+import { chat_id } from "../../../index";
 
 export async function Time_Controller(context: Context, user: User, id_planet: number): Promise<string | undefined> {
     let calc = ''
@@ -417,7 +419,7 @@ async function Factory_Controller(user: User, builder: Builder, id_planet: numbe
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
-                event_logger += ` -${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
                 console.log('Успешная работа Завода')
             })
             .catch((error) => {
@@ -572,21 +574,28 @@ async function Archaeological_Center_Controller(user: User, builder: Builder, id
     for (const output of outputs) {
         if (output.name == 'artefact') {
             const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'artefact', datenow, dateold, global_koef)
-            if ( data.income < inputs_storage[data.counter].income ) {
-                inputs_storage[data.counter].income -= data.income
-                const iron_art = await Randomizer_Float(0, 100)*data.income
-                const gold_art = await Randomizer_Float(0, 1000)*data.income
-                const energy_art = await Randomizer_Float(0, 10000)*data.income
-                const build = await Randomizer_Float(0, 1000) < 10 ? 1*Math.floor(data.income) : 0
+            const art_need = Math.floor(output.outcome)
+            console.log(`${art_need} < ${inputs_storage[data.counter].income} && ${inputs_storage[data.counter].income} >= 1`)
+            if ( art_need < inputs_storage[data.counter].income && inputs_storage[data.counter].income >= 1 ) {
+                inputs_storage[data.counter].income -= art_need
+                const iron_art = await Randomizer_Float(0, 100)*art_need
+                const gold_art = await Randomizer_Float(0, 1000)*art_need
+                const energy_art = await Randomizer_Float(0, 10000)*art_need
+                const build = await Randomizer_Float(0, 1000) > 900 ? 1*art_need : 0
                 const selector = await Rand_Int(2)
                 const speed_new = selector == 0 ? 0.001 : 0
                 const income_new = selector == 1 ? 1.01 : 1
+                const count_worker = await prisma.worker.count({ where: { id_planet: id_planet } })
                 await prisma.$transaction([
-                    prisma.worker.updateMany({ where: { id_user: user.id }, data: { income: { multiply: income_new }, speed: { increment: speed_new } } }),
+                    prisma.worker.updateMany({ where: { id_user: user.id, id_planet: id_planet }, data: { income: { multiply: income_new }, speed: { increment: speed_new } } }),
                     prisma.user.update({ where: { id: user.id }, data: { energy: { increment: energy_art },  gold: { increment: gold_art }, iron: { increment: iron_art }, update: datenow } }),
                     prisma.planet.update({ where: { id: id_planet }, data: { update: datenow, build: { increment: build } } }),
+                    prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
                 ]).then(() => {
-                    event_logger += `${icotransl_list[output.name].smile} C артефактов выпало: железа ${iron_art.toFixed(2)}, шекелей ${gold_art.toFixed(2)}, энергии ${energy_art.toFixed(2)} площадок ${build} ⌛ Работники ${user.idvk} получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.01%' }\n` 
+                    if (build > 0) {
+                        Send_Message(chat_id, `Поздравляем [https://vk.com/id${user.idvk}|${user.name}] c прокачкой Планеты-${planet.id} на ${build} площадки`)
+                    }
+                    event_logger += `${icotransl_list[output.name].smile} +${iron_art.toFixed(2)}${icotransl_list['iron'].smile}, +${gold_art.toFixed(2)}${icotransl_list['gold'].smile}, +${energy_art.toFixed(2)}${icotransl_list['energy'].smile} +${build}⚒ 👥${count_worker} --> ${speed_new > 0 ? '+0.001🧭' : '*0.01%📈' }\n` 
                     console.log(`C артефактов выпало: железа ${iron_art}, шекелей ${gold_art}, энергии ${energy_art} площадок ${build} ⌛ Работники ${user.idvk} получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.01%' }\n`);
                 })
                 .catch((error) => {

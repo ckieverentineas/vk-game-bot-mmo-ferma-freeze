@@ -67,10 +67,6 @@ model Builder {
   id         Int      @id @default(autoincrement())
   name       String
   lvl        Int      @default(1)
-  type       String   @default("energy")
-  income     Float    @default(1)
-  cost       Float    @default(100)
-  worker     Int      @default(1)
   costing    String   @default("empty")
   input      String   @default("empty")
   output     String   @default("empty")

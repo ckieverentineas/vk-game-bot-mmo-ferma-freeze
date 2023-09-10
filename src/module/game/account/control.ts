@@ -3,15 +3,25 @@ import { vk } from "../../../";
 import { Context, KeyboardBuilder } from "vk-io";
 import prisma from "../../prisma";
 import { icotransl_list } from "../datacenter/resources_translator";
+import { Require } from "../datacenter/builder_config";
 
 async function User_Info(user: User) {
 	const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
 	let count_worker_req = 0
+	let count_worker_be = 0
 	for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
-		count_worker_req += builder.worker
+		const requires: Require[] = JSON.parse(builder.require)
+		for (const require of requires) {
+			if (require.name == 'worker') {
+				const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+				if (worker_check) {
+					count_worker_req += Math.floor(require.limit)
+					count_worker_be += worker_check
+				}
+			}
+		}
 	}
-	const count_worker_be = await prisma.worker.count({ where: { id_user: user.id } })
-    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['iron'].smile} Железо: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Занято рабочих: ${count_worker_be}/${count_worker_req}\n`
+    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['iron'].smile} Железо: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Население (есть/надо): ${count_worker_be}/${count_worker_req}\n`
 	const keyboard = new KeyboardBuilder()
 	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control', stat: "health"  }, color: 'secondary' }).row()
 	.callbackButton({ label: '🌐 Корпорация', payload: { command: 'main_menu_corporation', stat: "health"  }, color: 'secondary' })

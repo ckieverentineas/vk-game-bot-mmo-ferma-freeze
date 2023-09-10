@@ -2,7 +2,7 @@ import { User, Builder, Corporation } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
-import { Send_Message } from "../account/service";
+import { Send_Message } from "../../../module/fab/helper";
 
 const buildin: { [key: string]: { price: number, income: number, cost: number, koef_price: number, koef_income: number, type: string, smile: string, description: string } } = {
     "Офис": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'gold', smile: '💰', description: "Офис является штабом вашего бизнеса и фискирует прибыль в шекелях" },

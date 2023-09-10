@@ -5,6 +5,7 @@ import prisma from "../../prisma";
 import { Randomizer_Float } from "../service";
 import { Time_Controller } from "../player/service";
 import { icotransl_list } from "../datacenter/resources_translator";
+import { Require } from "../datacenter/builder_config";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
     "Планета": { price: 100000, koef_price: 10, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" }
@@ -24,8 +25,22 @@ export async function Planet_Control(context: Context, user: User) {
 		.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         const worker_counter = await prisma.worker.count({ where: { id_planet: planet.id } });
-        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal'].smile} Караты: ${planet.crystal.toFixed(2)}\n👥 Население: ${worker_counter}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
-        event_logger += `Отчеты:\n${services_ans}`
+        let count_worker_req = 0
+        let count_worker_be = 0
+        for (const builder of await prisma.builder.findMany({ where: { id_user: user.id, id_planet: planet.id } })) {
+            const requires: Require[] = JSON.parse(builder.require)
+            for (const require of requires) {
+                if (require.name == 'worker') {
+                    const worker_check = await prisma.worker.count({ where: { id_builder: builder.id, } })
+                    if (worker_check) {
+                        count_worker_req += Math.floor(require.limit)
+                        count_worker_be += worker_check
+                    }
+                }
+            }
+        }
+        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal'].smile} Караты: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_counter}\n👥 На работе: ${count_worker_be}/${count_worker_req}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
+        event_logger += `\nОтчеты:\n${services_ans}`
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`
     }

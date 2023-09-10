@@ -265,8 +265,8 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
                     prisma.builder.update({ where: { id: builder.id }, data: { lvl: 1+builder.lvl, costing: JSON.stringify(cost_upa), input: JSON.stringify(build_calc.input) ?? '', output: JSON.stringify(build_calc.output) || '', require: JSON.stringify(build_calc.require), } }),
                     prisma.user.update({ where: { id: user.id }, data: { gold: { decrement: build_checker.gold }, iron: { decrement: build_checker.iron } } })
                 ]).then(([builder_up, user_up]) => {
-                    event_logger = `⌛ Поздравляем с улучшением уровня здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n💰 Шекеля: ${user.gold.toFixed(2)} - ${build_checker.gold.toFixed(2)} = ${user_up.gold.toFixed(2)}\n📏 Железо нафиг: ${user.iron.toFixed(2)} - ${build_checker.iron.toFixed(2)} = ${user_up.iron.toFixed(2)}` 
-                    console.log(`⌛ Поздравляем ${user.idvk} с улучшением уровня здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n💰 Шекеля: ${user.gold.toFixed(2)} - ${build_checker.gold.toFixed(2)} = ${user_up.gold.toFixed(2)}\n📏 Железо нафиг: ${user.iron.toFixed(2)} - ${build_checker.iron.toFixed(2)} = ${user_up.iron.toFixed(2)}`);
+                    event_logger = `⌛ Поздравляем с улучшением уровня здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n💰 Шекеля: ${user.gold.toFixed(2)} - ${build_checker.gold.toFixed(2)} = ${user_up.gold.toFixed(2)}\n${icotransl_list['iron'].smile} Железо: ${user.iron.toFixed(2)} - ${build_checker.iron.toFixed(2)} = ${user_up.iron.toFixed(2)}` 
+                    console.log(`⌛ Поздравляем ${user.idvk} с улучшением уровня здания ${builder_up.name}-${builder_up.id} с ${builder.lvl} на ${builder_up.lvl}.\n💰 Шекеля: ${user.gold.toFixed(2)} - ${build_checker.gold.toFixed(2)} = ${user_up.gold.toFixed(2)}\n${icotransl_list['iron'].smile} Железо: ${user.iron.toFixed(2)} - ${build_checker.iron.toFixed(2)} = ${user_up.iron.toFixed(2)}`);
                     //keyboard.callbackButton({ label: '👀', payload: { command: 'office', office_current: context.eventPayload.office_current, target: office_upgrade.id }, color: 'secondary' })
                 })
                 .catch((error) => {
@@ -277,7 +277,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
                 event_logger += `\n${build_checker.message}\n ${build_lvl_checker.message}.`
             }
         } else {
-            event_logger = `Вы уверены, что хотите улучшить здание ${builder.name}-${builder.id} за -->\n💰 Шекеля: ${build_checker.gold.toFixed(2)} при балансе ${user.gold.toFixed(2)}\n📏 Железо нафиг: ${build_checker.iron.toFixed(2)} при балансе ${user.iron.toFixed(2)}?\n\n Параметры вырастут следующим образом:\n\n`
+            event_logger = `Вы уверены, что хотите улучшить здание ${builder.name}-${builder.id} за -->\n💰 Шекеля: ${build_checker.gold.toFixed(2)} при балансе ${user.gold.toFixed(2)}\n${icotransl_list['iron'].smile} Железо: ${build_checker.iron.toFixed(2)} при балансе ${user.iron.toFixed(2)}?\n\n Параметры вырастут следующим образом:\n\n`
             if (build_calc.input) {
                 const inputs_new: Input[] = build_calc.input
                 const inputs: Input[] = JSON.parse(builder.input)

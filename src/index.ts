@@ -7,7 +7,6 @@ import { Main_Menu, Main_Menu_Close, User_Menu_Show } from "./module/game/accoun
 import { Builder_Control, Builder_Controller } from "./module/game/player/builder";
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
-import { Exchange_Control, Income_Control, Send_Message, Sleep } from "./module/game/account/service";
 import { registerUserRoutes } from "./player";
 import { Rand_Int } from "./module/fab/random";
 import { Corporation_Controller, Main_Menu_Corporation } from "./module/game/corporation/corporation";
@@ -15,6 +14,7 @@ import { Builder_Control_Corporation, Builder_Controller_Corporation } from "./m
 import { Member_Control, Member_Controller } from "./module/game/corporation/member";
 import { Trigger } from "@prisma/client";
 import { Planet_Control, Planet_Controller } from "./module/game/account/planet";
+import { Send_Message, Sleep } from "./module/fab/helper";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -137,8 +137,6 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"member_controller": Member_Controller,
 		"worker_control": Worker_Control,
 		"worker_controller": Worker_Controller,
-		"income_control": Income_Control,
-		"exchange_control": Exchange_Control
 	}
 	try {
 		await config[context.eventPayload.command](context, user)

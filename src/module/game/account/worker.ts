@@ -4,7 +4,7 @@ import { vk } from "../../..";
 import prisma from "../../prisma";
 import Generator_Nickname from "../../fab/generator_name";
 import { Rand_Int } from "../../fab/random";
-import { Send_Message } from "./service";
+import { Send_Message } from "../../../module/fab/helper";
 
 function Finder_Builder(builder_list: Builder[], worker: Worker) {
     for (let i=0; i < builder_list.length; i++) {
@@ -78,7 +78,7 @@ type Office_Controller = {
 
 async function Worker_Target(context: Context, user: User, target: number) {
     //let attached = await Image_Random(context, "beer")
-    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id }, orderBy: { worker: "desc" } })
+    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id }, orderBy: { id: "desc" } })
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Выберите новое место работы для вашего работника: \n\n`
     const curva = context.eventPayload.office_current || 0
@@ -88,7 +88,7 @@ async function Worker_Target(context: Context, user: User, target: number) {
         const id_build = context.eventPayload.selector == 'zero' ? 0 : context.eventPayload.selector
         const worker_checker: number = await prisma.worker.count({ where: { id_builder: id_build } })
         const builder = await prisma.builder.findFirst({ where: { id: id_build }})
-        if (builder && worker_checker < builder.worker || context.eventPayload.selector == 'zero') {
+        if (builder && worker_checker < 0/*limit*/ || context.eventPayload.selector == 'zero') {
             await prisma.$transaction([
                 prisma.worker.update({ where: { id: target }, data: { id_builder: id_build } }),
             ]).then(([worker_upd]) => {
@@ -100,7 +100,7 @@ async function Worker_Target(context: Context, user: User, target: number) {
                 console.error(`Ошибка: ${error.message}`);
             });
         } else {
-            event_logger += `В здании ${builder!.name}-${builder!.id} уже работает ${worker_checker}/${builder!.worker}👥 рабочих!`
+            event_logger += `В здании ${builder!.name}-${builder!.id} уже работает ${worker_checker}/0👥 рабочих!`
         }
         
     } else {
@@ -112,7 +112,7 @@ async function Worker_Target(context: Context, user: User, target: number) {
                 //console.log(`cur: ${cur} i: ${i} counter: ${counter} ${JSON.stringify(builder)}`)
                 if (counter < limiter) {
                     const worker_checker: number = await prisma.worker.count({ where: { id_builder: builder.id } })
-                    keyboard.callbackButton({ label: `✅ ${worker_checker}/${builder.worker}👥 ${builder.name}-${builder.id}`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: curva, target_current: cur, target: target, selector: builder.id }, color: 'secondary' }).row()
+                    keyboard.callbackButton({ label: `✅ ${worker_checker}/0👥 ${builder.name}-${builder.id}`, payload: { command: 'worker_controller', command_sub: 'worker_target', office_current: curva, target_current: cur, target: target, selector: builder.id }, color: 'secondary' }).row()
                     event_logger += `💬 Здание: ${builder.name}-${builder.id}\n`;
                 }
                 counter++
@@ -249,8 +249,8 @@ async function Worker_Config(context: Context, user: User) {
     for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
         if (builder) {
             const builder_check: number = await prisma.worker.count({ where: { id_builder: builder.id } })
-            if (builder_check < builder.worker) {
-                let need_worker = builder.worker - builder_check
+            if (builder_check < 0/*builder.worker*/) {
+                let need_worker = /*builder.worker*/ - builder_check
                 for (const worker of await prisma.worker.findMany({ where: { id_user: user.id, id_builder: 0 } })) {
                     if (worker && worker.id_builder == 0 && need_worker > 0) {
                         await prisma.worker.update({ where: { id: worker.id }, data: { id_builder: builder.id } })

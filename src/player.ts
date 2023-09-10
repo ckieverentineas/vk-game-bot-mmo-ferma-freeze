@@ -5,7 +5,7 @@ import prisma from "./module/prisma";
 import { Analyzer, Corporation, User } from "@prisma/client";
 import { Keyboard } from "vk-io";
 import { version_soft } from "./module/game/datacenter/system";
-import { Send_Message } from "./module/game/account/service";
+import { Send_Message } from "./module/fab/helper";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
 
 
@@ -300,7 +300,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 let sum = 0
                 let count = 0
                 for (const build of await prisma.builder.findMany({ where: { id_user: user.id } })) {
-                    sum += build.cost
+                    //sum += build.cost
                     await prisma.builder.delete({ where: { id: build.id } })
                     count++
                 }
