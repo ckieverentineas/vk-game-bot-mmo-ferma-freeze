@@ -29,8 +29,12 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                 keyboard: Keyboard.builder()
                 .textButton({ label: '⚡', payload: { command: 'energy' }, color: 'secondary' })
                 .textButton({ label: '💰', payload: { command: 'gold' }, color: 'secondary' })
-                .textButton({ label: '⚪', payload: { command: 'iron' }, color: 'secondary' })
+                .textButton({ label: `${icotransl_list['metal'].smile}`, payload: { command: 'iron' }, color: 'secondary' }).row()
+                .textButton({ label: `${icotransl_list['crystal'].smile}`, payload: { command: 'crystal' }, color: 'secondary' })
+                .textButton({ label: `${icotransl_list['coal'].smile}`, payload: { command: 'coal' }, color: 'secondary' })
+                .textButton({ label: `${icotransl_list['artefact'].smile}`, payload: { command: 'artefact' }, color: 'secondary' }).row()
                 .textButton({ label: '⚙', payload: { command: 'global' }, color: 'secondary' })
+                .textButton({ label: '🌎', payload: { command: 'planet' }, color: 'secondary' })
                 .textButton({ label: '🌐', payload: { command: 'corp' }, color: 'secondary' }).row()
                 .textButton({ label: 'ОК', payload: { command: 'stop' }, color: 'secondary' })
                 .oneTime().inline(), answerTimeLimit
@@ -44,6 +48,10 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                     'energy': Stat_Energy,
                     'gold': Stat_Gold,
                     'iron': Stat_Iron,
+                    'crystal': Stat_Crystal,
+                    'coal': Stat_Coal,
+                    'artefact': Stat_Artefact,
+                    'planet': Stat_Planet,
                     'global': Stat_Global,
                     'corp': Stat_Corp,
                     'stop': Stat_Stop
@@ -61,58 +69,214 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             const builder = await prisma.builder.count()
             const corporation = await prisma.corporation.count()
             const worker = await prisma.worker.count()
-            return `❄ FERma v ${version_soft}:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
+            const planet = await prisma.planet.count()
+            return `❄ FERma v ${version_soft}:\n\n👤 Игроков: ${player}\n🌐 Корпораций: ${corporation}\n🌎 Планет: ${planet}\n🏛 Зданий: ${builder}\n👥 Рабочих: ${worker}`
         }
         async function Stat_Stop() {
             return `stop`
         }
         async function Stat_Energy() {
             let users = '❄ Рейтинг по добытой энергии:\n\n'
-
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
             let counter = 1
             for (const statistics of await prisma.statistics.findMany({ include: { user: true } })) {
                 const all: Resources = JSON.parse(statistics.all)
-                if (counter <= 10) {
-                    users += `${statistics.user.idvk == context.senderId ? '✅' : '👤'} ${counter} - [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.energy.toFixed(2)}⚡\n`
-                } else {
-                    if (statistics.user.idvk == context.senderId) {
-                        users += `\n✅ ${counter} - [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.energy.toFixed(2)}⚡`
-                    }
-                }
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.energy.toFixed(2)}${icotransl_list['energy'].smile}\n`,
+                    score: all.energy,
+                    me: statistics.user.idvk == context.senderId ? true : false
+                })
                 counter++
             }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
+            return `${users}`
+        }
+        async function Stat_Crystal() {
+            let users = '❄ Рейтинг по очищенным каратам:\n\n'
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
+            let counter = 1
+            for (const statistics of await prisma.statistics.findMany({ include: { user: true } })) {
+                const all: Resources = JSON.parse(statistics.all)
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n`,
+                    score: all.crystal,
+                    me: statistics.user.idvk == context.senderId ? true : false
+                })
+                counter++
+            }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
+            return `${users}`
+        }
+        async function Stat_Coal() {
+            let users = '❄ Рейтинг по добытому углю:\n\n'
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
+            let counter = 1
+            for (const statistics of await prisma.statistics.findMany({ include: { user: true } })) {
+                const all: Resources = JSON.parse(statistics.all)
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.coal.toFixed(2)}${icotransl_list['coal'].smile}\n`,
+                    score: all.coal,
+                    me: statistics.user.idvk == context.senderId ? true : false
+                })
+                counter++
+            }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
+            return `${users}`
+        }
+        async function Stat_Artefact() {
+            let users = '❄ Рейтинг по вскрытым артефактам:\n\n'
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
+            let counter = 1
+            for (const statistics of await prisma.statistics.findMany({ include: { user: true } })) {
+                const all: Resources = JSON.parse(statistics.all)
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.artefact.toFixed(2)}${icotransl_list['artefact'].smile}\n`,
+                    score: all.artefact,
+                    me: statistics.user.idvk == context.senderId ? true : false
+                })
+                counter++
+            }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
             return `${users}`
         }
         async function Stat_Gold() {
             let users = '❄ Рейтинг по начеканненым шекелям:\n\n'
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
             let counter = 1
             for (const statistics of await prisma.statistics.findMany({ include: { user: true } })) {
                 const all: Resources = JSON.parse(statistics.all)
-                if (counter <= 10) {
-                    users += `${statistics.user.idvk == context.senderId ? '✅' : '👤'} ${counter} - [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.gold.toFixed(2)}💰\n`
-                } else {
-                    if (statistics.user.idvk == context.senderId) {
-                        users += `\n✅ ${counter} - [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.gold.toFixed(2)}💰`
-                    }
-                }
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.gold.toFixed(2)}💰\n`,
+                    score: all.gold,
+                    me: statistics.user.idvk == context.senderId ? true : false
+                })
                 counter++
             }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
             return `${users}`
         }
 		async function Stat_Iron() {
             let users = '❄ Рейтинг по выплавленному железу:\n\n'
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
             let counter = 1
             for (const statistics of await prisma.statistics.findMany({ include: { user: true } })) {
                 const all: Resources = JSON.parse(statistics.all)
-                if (counter <= 10) {
-                    users += `${statistics.user.idvk == context.senderId ? '✅' : '👤'} ${counter} - [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.iron.toFixed(2)}${icotransl_list['iron'].smile}\n`
-                } else {
-                    if (statistics.user.idvk == context.senderId) {
-                        users += `\n✅ ${counter} - [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.iron.toFixed(2)}${icotransl_list['iron'].smile}`
-                    }
-                }
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${statistics.user.idvk}|${statistics.user.name.slice(0, 20)}] --> ${all.iron.toFixed(2)}${icotransl_list['metal'].smile}\n`,
+                    score: all.iron,
+                    me: statistics.user.idvk == context.senderId ? true : false
+                })
                 counter++
             }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
             return `${users}`
         }
         async function Stat_Corp() {
@@ -147,7 +311,40 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             event_logger += `\n\n\n\n\n\n${corp_me}`
             return `${event_logger}`
         }
-        
+        async function Stat_Planet() {
+            let users = '❄ Рейтинг по владению планетами:\n\n'
+            const stat: { rank: number, text: string, score: number, me: boolean }[] = []
+            let counter = 1
+            for (const user of await prisma.user.findMany()) {
+                const planet_count = await prisma.planet.count({ where: { id_user: user.id } })
+                stat.push({
+                    rank: counter,
+                    text: `- [https://vk.com/id${user.idvk}|${user.name.slice(0, 20)}] --> ${planet_count}🌎\n`,
+                    score: planet_count,
+                    me: user.idvk == context.senderId ? true : false
+                })
+                counter++
+            }
+            stat.sort(function(a, b){
+                return b.score - a.score;
+            });
+            let counter_last = 1
+            let trig_find_me = false
+            for (const stat_sel of stat) {
+                if (counter_last <= 10) {
+                    users += `${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    if (stat_sel.me) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.me) {
+                        users += `\n\n${stat_sel.me ? '✅' : '👤'} ${counter_last} ${stat_sel.text}`
+                    }
+                }
+                counter_last++
+            }
+            users += `\n\n☠ В статистие участвует ${counter} игроков`
+            return `${users}`
+        }
         /*const text = [
             { idvk: 1, id: 1, text: "Г", white: " " },
             { idvk: 12, id: 1, text: "ГИ", white: " " },
