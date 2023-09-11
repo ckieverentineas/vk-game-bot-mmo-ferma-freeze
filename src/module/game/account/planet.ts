@@ -22,7 +22,8 @@ export async function Planet_Control(context: Context, user: User) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
-		.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' }).row()
+		.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' })
+        keyboard.callbackButton({ label: `♻`, payload: { command: 'planet_control', current_object: cur }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         const worker_counter = await prisma.worker.count({ where: { id_planet: planet.id } });
         let count_worker_req = 0
@@ -39,7 +40,7 @@ export async function Planet_Control(context: Context, user: User) {
                 }
             }
         }
-        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal'].smile} Караты: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_counter}\n👥 На работе: ${count_worker_be}/${count_worker_req}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
+        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal_in'].smile} ${icotransl_list['crystal_in'].name}: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_counter}\n👥 На работе: ${count_worker_be}/${count_worker_req}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
         event_logger += `\nОтчеты:\n${services_ans}`
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`

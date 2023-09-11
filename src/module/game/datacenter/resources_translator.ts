@@ -13,6 +13,8 @@ export const icotransl_list: { [key: string]: { name: string, smile: string } } 
     'energy': { name: 'Энергия', smile: '⚡'},
     'gold': { name: 'Шекели', smile: '💰'},
     'research': { name: 'Очки исследований', smile: '🧪'},
+    'metal': { name: 'Железо', smile: '📏'},
+    'crystal_in': { name: 'Караты неоичещнные', smile: '💠'},
 }
 /*🔳🟦◾🟫◻▪🟨◽◼▫🟥⬜🛒
 

@@ -111,7 +111,7 @@ async function Mine_Controller(user: User, builder: Builder, id_planet: number) 
             if ( data.income < planet.crystal ) {
                 inputs_storage[data.counter].income += data.income
                 income_wil.crystal += data.income
-                event_logger += ` +${data.income.toFixed(2)}${icotransl_list[input.name].smile} `
+                event_logger += ` +${data.income.toFixed(2)}${icotransl_list['crystal_in'].smile} `
             }
         }
         if (input.name == 'artefact') {
@@ -422,7 +422,7 @@ async function Factory_Controller(user: User, builder: Builder, id_planet: numbe
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
                 prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage) } }),
             ]).then(([]) => {
-                event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                event_logger += ` +${data.toFixed(2)}${icotransl_list['metal'].smile} `
                 Update_Statistics(user, [{ name: 'iron', value: data} ])
                 console.log('Успешная работа Завода')
             })
@@ -597,7 +597,7 @@ async function Archaeological_Center_Controller(user: User, builder: Builder, id
                     prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
                 ]).then(() => {
                     if (build > 0) {
-                        Send_Message(chat_id, `Поздравляем [https://vk.com/id${user.idvk}|${user.name}] c прокачкой Планеты-${planet.id} на ${build} площадки`)
+                        Send_Message(chat_id, `🌟 Поздравляем [https://vk.com/id${user.idvk}|${user.name}] c прокачкой Планеты-${planet.id} на ${build} площадки`)
                     }
                     event_logger += `${icotransl_list[output.name].smile} +${iron_art.toFixed(2)}${icotransl_list['iron'].smile}, +${gold_art.toFixed(2)}${icotransl_list['gold'].smile}, +${energy_art.toFixed(2)}${icotransl_list['energy'].smile} +${build}⚒ 👥${count_worker} --> ${speed_new > 0 ? '+0.001🧭' : '*0.01%📈' }\n` 
                     Update_Statistics(user, [{ name: 'artefact', value: art_need} ])
@@ -673,7 +673,7 @@ async function Laboratory_Controller(user: User, builder: Builder, id_planet: nu
                 prisma.user.update({ where: { id: user.id }, data: { research: { increment: data }, update: datenow } }),
                 prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
             ]).then(([]) => {
-                event_logger += ` -${data.toFixed(2)}${icotransl_list[input.name].smile} `
+                event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
                 console.log('Успешная работа Лаборатории')
             })
             .catch((error) => {
@@ -694,7 +694,7 @@ async function Laboratory_Controller(user: User, builder: Builder, id_planet: nu
             prisma.user.update({ where: { id: user.id }, data: { crystal: { increment: crystal_need }, update: datenow } }),
             prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
         ]).then(() => {
-            event_logger += ` +${crystal_need.toFixed(2)}${icotransl_list['crystal'].smile} ` 
+            event_logger += ` +${crystal_need.toFixed(2)}${icotransl_list['crystal_in'].smile}-->${icotransl_list['crystal'].smile} ` 
             Update_Statistics(user, [{ name: 'crystal', value: crystal_need} ])
         })
         .catch((error) => {

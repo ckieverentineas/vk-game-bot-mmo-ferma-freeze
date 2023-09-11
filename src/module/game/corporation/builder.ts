@@ -109,12 +109,21 @@ async function Builder_Upgrade_Corporation(context: Context, user: User, target:
     const keyboard = new KeyboardBuilder()
     const builder: Corporation_Builder | null = await prisma.corporation_Builder.findFirst({ where: { id_corporation: user.id_corporation, id: target }})
     let event_logger = `В данный момент здание корпорации нельзя улучшить...`
+    const limapro = context.eventPayload.limapro ?? 1
     if (builder) {
-        const sel = buildin[builder.name]
-        const lvl_new = builder.lvl+1
-        const price_new = sel.price*(lvl_new**sel.koef_price)
-        const worker_new = lvl_new/10 >= 1 ? Math.floor(lvl_new/10) : 1
-        const income_new = sel.income*(lvl_new**sel.koef_income)
+        let sel = buildin[builder.name]
+        let lvl_new = 0
+        let price_new = 0
+        let worker_new = 0
+        let income_new = 0
+        let lvl = builder.lvl
+        for (let j=0; j < limapro; j++) {
+            lvl++
+            lvl_new = lvl
+            price_new += sel.price*(lvl_new**sel.koef_price)
+            worker_new = lvl_new/10 >= 1 ? Math.floor(lvl_new/10) : 1
+            income_new = sel.income*(lvl_new**sel.koef_income)
+        }
         const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
         if (context.eventPayload.status == "ok") {
             if (corp && corp.gold >= price_new) {
@@ -135,7 +144,13 @@ async function Builder_Upgrade_Corporation(context: Context, user: User, target:
             }
         } else {
             event_logger = `Вы уверены, что хотите улучшить здание корпорации ${builder.name}-${builder.id} за ${price_new.toFixed(2)} при балансе ${corp!.gold.toFixed(2)}💰?\n\n Параметры вырастут следующим образом:\n${buildin[builder.name].smile} ${sel.income_description}: ${builder.income.toFixed(2)} --> ${income_new.toFixed(2)}\n👥 Рабочих: ${builder.worker} --> ${worker_new}\n`
-            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, status: "ok" }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'ОК', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: limapro, status: "ok" }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'Хочу 1x', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: 1 }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'Хочу 5x', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: 5 }, color: 'secondary' }).row()
+            keyboard.callbackButton({ label: 'Хочу 10x', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: 10 }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'Хочу 25x', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: 25 }, color: 'secondary' }).row()
+            keyboard.callbackButton({ label: 'Хочу 50x', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: 50 }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'Хочу 100x', payload: { command: 'builder_controller_corporation', command_sub: 'builder_upgrade_corporation', office_current: 0, target: builder.id, limapro: 100 }, color: 'secondary' })
         } 
     }
     //назад хз куда
