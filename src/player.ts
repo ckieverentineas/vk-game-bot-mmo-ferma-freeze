@@ -1,5 +1,5 @@
 import { HearManager } from "@vk-io/hear";
-import { answerTimeLimit, chat_id, group_id, root, vk } from "./index";
+import { answerTimeLimit, chat_id, group_id, root, vk, vk_user } from "./index";
 import { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { Analyzer, Corporation, User } from "@prisma/client";
@@ -612,8 +612,11 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         }
     })
     hearManager.hear(/!босс|!Босс/gm, async (context: any) => {
-        console.log(context)
-        const test = await vk.api.wall.post({ owner_id: -group_id, message: "test boss"})
-        console.log(test)
+        if (context.isOutbox == false && root.includes(String(context.senderId)) && context.text) {
+            console.log(context)
+            const test = await vk_user.api.wall.post({ owner_id: -group_id, from_group: true, message: "test boss"})
+            await context.send('Босс публикейшен')
+            console.log(test)
+        }
     })
 }

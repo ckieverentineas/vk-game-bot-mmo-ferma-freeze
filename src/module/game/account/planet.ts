@@ -40,8 +40,8 @@ export async function Planet_Control(context: Context, user: User) {
                 }
             }
         }
-        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal_in'].smile} ${icotransl_list['crystal_in'].name}: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_counter}\n👥 На работе: ${count_worker_be}/${count_worker_req}\n\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`;
-        event_logger += `\nОтчеты:\n${services_ans}`
+        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal_in'].smile} ${icotransl_list['crystal_in'].name}: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_counter}\n👥 На работе: ${count_worker_be}/${count_worker_req}\n`;
+        event_logger += `\nОтчеты: ${services_ans}\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`
     }

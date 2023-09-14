@@ -1,7 +1,7 @@
 import { Statistics, User } from "@prisma/client";
 import prisma from "./../../../module/prisma";
-import { Sleep } from "../../../module/fab/helper";
-import { Randomizer_Float } from "../service";
+//import { Sleep } from "../../../module/fab/helper";
+//import { Randomizer_Float } from "../service";
 
 export interface Statistics_Init {
     id?: number,
@@ -68,7 +68,7 @@ export async function Update_Statistics(user: User, target: Target_List[]) {
             const target_sel = target[i] 
             all[target_sel.name] = all[target_sel.name] + target_sel.value
         }
-        await Sleep(await Randomizer_Float(1000, 10000))
+        //await Sleep(await Randomizer_Float(1000, 10000))
         await prisma.statistics.update({ where: { id: statistics.id }, data: { all: JSON.stringify(all) } })
         console.log(`Успешное обновление статистики пользователя ${user.idvk}`)
     } catch (error) {

@@ -4,6 +4,7 @@ import { vk } from "../../..";
 import prisma from "../../prisma";
 import { Builder_Init, Builder_Set, Cost, Cost_Set, Input, Output, Require, buildin } from "../datacenter/builder_config";
 import { icotransl_list } from "../datacenter/resources_translator";
+import { Builder_Lifer } from "./service";
 
 
 export async function Builder_Control(context: Context, user: User) {
@@ -18,7 +19,8 @@ export async function Builder_Control(context: Context, user: User) {
         if (builder.upgradeble) {
             keyboard.callbackButton({ label: `🔧 Улучшить`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
         }
-        keyboard.callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: '💥 Разрушить', payload: { command: 'builder_controller', command_sub: 'builder_destroy', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet }, color: 'secondary' })
+        keyboard.callbackButton({ label: `♻`, payload: { command: 'builder_control', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         const costs: Cost[] = JSON.parse(builder.costing)
         event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📝 Уровень: ${builder.lvl}\n`
@@ -46,7 +48,9 @@ export async function Builder_Control(context: Context, user: User) {
             event_logger += `\n📐 При улучшении: \n`
             event_logger += (await Builder_Add_Check(user, build_calc, id_planet, false)).message
         }
-        event_logger +=`\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} ~~~~` : ''}`;
+        const services_ans = await Builder_Lifer(user, builder, id_planet)
+        const plancant = await prisma.planet.findFirst({ where: { id: id_planet }, select: { build: true } })
+        event_logger +=`\n\nОтчеты: ${services_ans}\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} (макс ${plancant?.build}) ~~~~` : ''}`;
     } else {
         event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
     }

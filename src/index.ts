@@ -18,6 +18,7 @@ import { Send_Message, Sleep } from "./module/fab/helper";
 dotenv.config();
 
 export const token: string = process.env.token as string
+const token_user_nafig: string = process.env.token_user as string
 export const root: string[] = process.env.root!.split(', '); //root user
 export const chat_id: number = Number(process.env.chat_id) //chat for logs
 export const group_id: number = Number(process.env.group_id)//clear chat group
@@ -25,6 +26,7 @@ export const timer_text = { answerTimeLimit: 300_000 } // ожидать пят�
 export const answerTimeLimit = 300_000 // ожидать пять минут
 
 export const vk = new VK({ token: token, pollingGroupId: group_id, apiLimit: 1 });
+export const vk_user = new VK({ token: token_user_nafig, pollingGroupId: undefined, apiLimit: 1 });
 //инициализация
 const questionManager = new QuestionManager();
 const hearManager = new HearManager<IQuestionMessageContext>();
@@ -162,7 +164,6 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 			})
 			await Sleep(600000)
 			await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
-			
 			return await next()
 		} else {
 			await prisma.user.update({ where: { id: user.id }, data: { limiter: { increment: 1 } } })
@@ -170,7 +171,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		if ((Number(datenow) - Number(dateold)) > 600000) {
 			await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
 			await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
-			await vk.api.messages.sendMessageEventAnswer({
+			/*await vk.api.messages.sendMessageEventAnswer({
 				event_id: context.eventId,
 				user_id: context.userId,
 				peer_id: context.peerId,
@@ -178,7 +179,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 					type: "show_snackbar",
 					text: `✅ Начался новый рабочий день, приступайте к работе!`
 				})
-			})
+			})*/
 			return await next()
 		}
 	} catch (e) {

@@ -48,5 +48,7 @@ export async function Main_Menu(context: Context, user: User) {
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 export async function Main_Menu_Close(context: Context, user: User) {
-	await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `❄ Сессия успешно завершена, ${user.name}, чтобы начать новую, напишите [клава] без квадратных скобочек`, /*, attachment: attached.toString()*/ })
+	const keyboard = new KeyboardBuilder()
+	keyboard.textButton({ label: 'КЛАВА', payload: { command: 'planet_control', stat: "health"  }, color: 'secondary' }).row().inline().oneTime() 
+	await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `❄ Сессия успешно завершена, ${user.name}, чтобы начать новую, напишите [клава] без квадратных скобочек`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
