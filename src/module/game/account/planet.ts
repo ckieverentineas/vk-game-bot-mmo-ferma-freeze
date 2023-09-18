@@ -8,7 +8,8 @@ import { icotransl_list } from "../datacenter/resources_translator";
 import { Require } from "../datacenter/builder_config";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
-    "Планета": { price: 100000, koef_price: 10, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" }
+    "Планета": { price: 100000, koef_price: 3, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" },
+    "Планета Мега": { price: 10, koef_price: 1, description: "Планета Мега - огромные планеты в далеких уголках галактики, еще больше ископаемых, много площадок" }
 }
 
 export async function Planet_Control(context: Context, user: User) {
@@ -83,46 +84,96 @@ export async function Planet_Controller(context: Context, user: User) {
 type Object_Controller = {
     [key: string]: (context: Context, user: User, target?: number) => Promise<void>;
 }
-
+async function Planet_Usual(user: User, target: string) {
+    const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } })
+    const planet_counter = await prisma.planet.count({ where: { id_user: user.id, name: target } })
+    const sel = buildin[target]
+    const price_new = sel.price*(planet_counter**sel.koef_price)
+    let event_logger = ''
+    if (user.energy >= price_new && user.energy > 0 && systema!.planet > 0) {
+        await prisma.$transaction([
+            prisma.planet.create({ data: { 
+				id_user: user.id, id_system: 1, name: target, 
+				coal: await Randomizer_Float(1000000, 1000000*2), 
+				gas: await Randomizer_Float(50000, 50000*2), 
+				oil: await Randomizer_Float(25000, 25000*2), 
+				slate: await Randomizer_Float(10000, 10000*2),
+				turf: await Randomizer_Float(5000, 5000*2), 
+				uranium: await Randomizer_Float(1000, 1000*2),
+				iron: await Randomizer_Float(1000000, 1000000*2),
+				golden: await Randomizer_Float(1000000, 1000000*2),
+				artefact: Math.floor(await Randomizer_Float(100, 100*2)),
+				crystal: Math.floor(await Randomizer_Float(0, 5))
+			} }),
+            prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: price_new } } }),
+			prisma.system.update({ where: { id: 1}, data: { planet: { decrement: 1 } } })
+        ]).then(([builder_new, user_pay, sys]) => {
+            event_logger = `⌛ Поздравляем с колонизацией планеты ${builder_new.name}-${builder_new.id}.\n🏦 У вас было ${user.energy.toFixed(2)} энергии, затрачено на перелеты ${price_new.toFixed(2)}, осталось: ${user_pay.energy.toFixed(2)}\n\nВо вселенной осталось еще ${sys.planet.toFixed(0)} свободных планет` 
+            console.log(`⌛ Поздравляем ${user.idvk} с колонизацией планеты ${builder_new.name}-${builder_new.id}.\n🏦 У вас было ${user.energy.toFixed(2)} энергии, затрачено на перелеты ${price_new.toFixed(2)}, осталось: ${user_pay.energy.toFixed(2)}`);
+        })
+        .catch((error) => {
+            event_logger = `⌛ Произошла ошибка колонизации планеты, попробуйте позже` 
+            console.error(`Ошибка: ${error.message}`);
+        });
+    } else {
+        event_logger = `⌛ У вас недостает ${(price_new-user.energy).toFixed(2)} энергии для колонизации новой планеты.`
+    }
+    return event_logger
+}
+async function Planet_Mega(user: User, target: string) {
+    const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } })
+    const planet_counter = await prisma.planet.count({ where: { id_user: user.id, name: target } })
+    const sel = buildin[target]
+    const price_new = sel.price*(planet_counter**sel.koef_price)
+    let event_logger = ''
+    const mulmin = 5
+    const mulmax = 3
+    if (user.crystal >= price_new && user.crystal > 0 && systema!.planet > 0) {
+        await prisma.$transaction([
+            prisma.planet.create({ data: { 
+				id_user: user.id, id_system: 1, name: target, 
+				coal: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax)), 
+				gas: await Randomizer_Float(50000*mulmin, 50000*mulmin*mulmax), 
+				oil: await Randomizer_Float(25000*mulmin, 25000*mulmin*mulmax), 
+				slate: await Randomizer_Float(10000, 10000*mulmax),
+				turf: await Randomizer_Float(5000, 5000*mulmax), 
+				uranium: await Randomizer_Float(1000*mulmin, 1000*mulmin*mulmax),
+				iron: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax),
+				golden: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax),
+				artefact: Math.floor(await Randomizer_Float(100*mulmin, 100*mulmin*mulmax)),
+				crystal: Math.floor(await Randomizer_Float(1, 25)),
+                build: 15
+			} }),
+            prisma.user.update({ where: { id: user.id }, data: { crystal: { decrement: price_new } } }),
+			prisma.system.update({ where: { id: 1}, data: { planet: { decrement: 1 } } })
+        ]).then(([builder_new, user_pay, sys]) => {
+            event_logger = `⌛ Поздравляем с колонизацией планеты ${builder_new.name}-${builder_new.id}.\n🏦 У вас было ${user.crystal} карат, затрачено на дальние перелеты ${price_new.toFixed(2)}, осталось: ${user_pay.crystal.toFixed(2)}\n\nВо вселенной осталось еще ${sys.planet.toFixed(0)} свободных планет` 
+            console.log(`⌛ Поздравляем ${user.idvk} с колонизацией планеты ${builder_new.name}-${builder_new.id}.\n🏦 У вас было ${user.crystal} карат, затрачено на дальние перелеты ${price_new.toFixed(2)}, осталось: ${user_pay.crystal.toFixed(2)}\n\nВо вселенной осталось еще ${sys.planet.toFixed(0)} свободных планет`);
+        })
+        .catch((error) => {
+            event_logger = `⌛ Произошла ошибка колонизации планеты, попробуйте позже` 
+            console.error(`Ошибка: ${error.message}`);
+        });
+    } else {
+        event_logger = `⌛ У вас недостает ${(price_new-user.energy).toFixed(2)} энергии для колонизации новой планеты.`
+    }
+    return event_logger
+}
 async function Planet_Add(context: Context, user: User, ) {
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Выберите новую планету для постройки:\n\n`
 	const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } }) ? await prisma.system.findFirst({ where: { id: 1 } }) : await prisma.system.create({ data: { name: "Альтера", planet: Math.floor(await Randomizer_Float(1000000000000000000000000, 5000000000000000000000000)) } })
-	const planet_counter = await prisma.planet.count({ where: { id_user: user.id } })
+    console.log(`Во вселенной ${systema.name} осталось ${systema.planet.toFixed(0)} свободных планет`)
     if (context.eventPayload.selector) {
-        const sel = buildin[context.eventPayload.selector]
-        const price_new = sel.price*(planet_counter**sel.koef_price)
-        if (user.energy >= price_new && user.energy > 0 && systema!.planet > 0) {
-            await prisma.$transaction([
-                prisma.planet.create({ data: { 
-					id_user: user.id, id_system: 1, name: context.eventPayload.selector, 
-					coal: await Randomizer_Float(1000000, 1000000*(planet_counter+2)), 
-					gas: await Randomizer_Float(50000, 50000*(planet_counter+2)), 
-					oil: await Randomizer_Float(25000, 25000*(planet_counter+2)), 
-					slate: await Randomizer_Float(10000, 10000*(planet_counter+2)),
-					turf: await Randomizer_Float(5000, 5000*(planet_counter+2)), 
-					uranium: await Randomizer_Float(1000, 1000*(planet_counter+2)),
-					iron: await Randomizer_Float(1000000, 1000000*(planet_counter+2)),
-					golden: await Randomizer_Float(1000000, 1000000*(planet_counter+2)),
-					artefact: Math.floor(await Randomizer_Float(100, 100*(planet_counter+2))),
-					crystal: Math.floor(await Randomizer_Float(0, 5))
-				} }),
-                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: price_new } } }),
-				prisma.system.update({ where: { id: 1}, data: { planet: { decrement: 1 } } })
-            ]).then(([builder_new, user_pay, sys]) => {
-                event_logger = `⌛ Поздравляем с колонизацией планеты ${builder_new.name}-${builder_new.id}.\n🏦 У вас было ${user.energy.toFixed(2)} энергии, затрачено на перелеты ${price_new.toFixed(2)}, осталось: ${user_pay.energy.toFixed(2)}\n\nВо вселенной осталось еще ${sys.planet.toFixed(0)} свободных планет` 
-                console.log(`⌛ Поздравляем ${user.idvk} с колонизацией планеты ${builder_new.name}-${builder_new.id}.\n🏦 У вас было ${user.energy.toFixed(2)} энергии, затрачено на перелеты ${price_new.toFixed(2)}, осталось: ${user_pay.energy.toFixed(2)}`);
-            })
-            .catch((error) => {
-                event_logger = `⌛ Произошла ошибка колонизации планеты, попробуйте позже` 
-                console.error(`Ошибка: ${error.message}`);
-            });
-        } else {
-            event_logger = `⌛ У вас недостает ${(price_new-user.energy).toFixed(2)} энергии для колонизации новой планеты.`
+        const config = {
+            'Планета': Planet_Usual,
+            'Планета Мега': Planet_Mega,
         }
+        event_logger += await config[context.eventPayload.selector](user, context.eventPayload.selector)
     } else {
         for (const builder of ['Планета']) {
             const sel = buildin[builder]
+            const planet_counter = await prisma.planet.count({ where: { id_user: user.id, name: builder } })
             const price_new = sel.price*(planet_counter**sel.koef_price)
             keyboard.callbackButton({ label: `➕ ${builder} ${price_new}⚡`, payload: { command: 'planet_controller', command_sub: 'planet_add', current_object: 0, selector: builder }, color: 'secondary' }).row()
             event_logger += `\n\n💬 Планета: ${builder}\n ${sel.description}`;

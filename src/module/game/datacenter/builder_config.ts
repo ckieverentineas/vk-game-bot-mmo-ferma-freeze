@@ -63,7 +63,7 @@ export const buildin: Builder_Init[] = [
             { name: 'iron', count: 10, koef: 1.3838 },
         ],
         input: [
-            { name: 'worker', income: 5, koef: 1.4, time: 'none' },
+            { name: 'worker', income: 5, koef: 0.66, time: 'none' },
         ],
         output: [
             { name: 'energy', outcome: 1, koef: 1.4, time: 3600000 },
