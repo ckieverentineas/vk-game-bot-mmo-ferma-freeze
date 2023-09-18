@@ -548,7 +548,29 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
                     console.error(`Ошибка ${cmd} : ${error.message}`);
                 });
             } else {
-                await context.send(`У вас на счету ${user_from?.gold.toFixed(2)}, вам не хватает ${(value-user_from!.gold).toFixed(2)} шекелей для передачи!`)
+                if (operation_list.includes(action)) {
+                    await context.send(`У вас на счету ${user_from?.gold.toFixed(2)}, вам не хватает ${(value-user_from!.gold).toFixed(2)} шекелей для передачи!`)
+                }
+            }
+            const operation_list1 = ['железа', 'железо']
+            if (operation_list1.includes(action) && parseFloat(value) > 0 && user_from && user_to && parseFloat(value) <= user_from.iron) {
+                await prisma.$transaction([
+                    prisma.user.update({ where: { id: user_from.id }, data: { iron: { decrement: parseFloat(value)}} }),
+                    prisma.user.update({ where: { id: user_to.id }, data: { iron: { increment: parseFloat(value)}} }),
+                ]).then(([user_froms, user_tos]) => {
+                    console.log(`${icotransl_list['metal'].smile} ${cmd} Транзакция железа в сумме ${parseFloat(value)} успешно завершена от ${user_froms.name} к ${user_tos.name}`);
+                    context.send(`${icotransl_list['metal'].smile} Транзакция железа в сумме ${parseFloat(value)} успешно завершена от ${user_froms.name} к ${user_tos.name}`)
+                    vk.api.messages.send({ peer_id: user_tos.idvk, random_id: 0, message: `${icotransl_list['metal'].smile} Ваш счет увеличился с ${user_to.iron.toFixed(2)} до ${user_tos.iron.toFixed(2)}, отправитель @id${user_from.idvk}(${user_from.name})` })
+                    vk.api.messages.send({ peer_id: user_froms.idvk, random_id: 0, message: `${icotransl_list['metal'].smile} Ваш счет уменьшился с ${user_from.iron.toFixed(2)} до ${user_froms.iron.toFixed(2)}, при передачи средств к @id${user_to.idvk}(${user_to.name})` })
+                })
+                .catch((error) => {
+                    context.send(`${icotransl_list['metal'].smile} ошибка транзакции железа...`)
+                    console.error(`Ошибка ${cmd} : ${error.message}`);
+                });
+            } else {
+                if (operation_list1.includes(action)) {
+                    await context.send(`У вас на счету ${user_from?.iron.toFixed(2)}, вам не хватает ${(value-user_from!.iron).toFixed(2)} железа для передачи!`)
+                }
             }
         }
     })

@@ -1,4 +1,4 @@
-import { User, Builder } from "@prisma/client"
+import { User, Builder, Research } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
@@ -23,7 +23,8 @@ export async function Builder_Control(context: Context, user: User) {
         keyboard.callbackButton({ label: `♻`, payload: { command: 'builder_control', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet }, color: 'secondary' }).row()
         //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
         const costs: Cost[] = JSON.parse(builder.costing)
-        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📝 Уровень: ${builder.lvl}\n`
+        const research: Research | null = await prisma.research.findFirst({ where: { id_user: user.id, name: builder.name } })
+        event_logger +=`💬 Здание: ${builder.name}-${builder.id}\n📝 Уровень: ${builder.lvl}/${research?.lvl || 10}\n`
         event_logger += `\n📊 Вложено: \n`
         for (const cost of costs) {
             event_logger += `${icotransl_list[cost.name].smile} ${icotransl_list[cost.name].name} --> ${cost.count.toFixed(2)}\n`
@@ -142,9 +143,10 @@ async function Builder_Add_Check(user: User, build: Builder_Set, id_planet: numb
     return event_logger
 }
 
-async function Limiter_Lvl(builder: Builder) {
+async function Limiter_Lvl(user: User, builder: Builder) {
     const event_logger = { message: '', status: true}
-    if (builder.lvl > 9) {
+    const lima = await prisma.research.findFirst({ where: { id_user: user.id, name: builder.name } }) || { lvl: 10 }
+    if (builder.lvl >= lima?.lvl) {
         event_logger.status = false
         event_logger.message = '⛔ Достигнут максимальный уровень'
     }
@@ -259,7 +261,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
         const build_calc: Builder_Init = await Builder_Calculation(sel.builder, builder.lvl)
         if (!build_calc) { return }
         const build_checker = await Builder_Add_Check(user, build_calc, id_planet, false)
-        const build_lvl_checker = await Limiter_Lvl(builder)
+        const build_lvl_checker = await Limiter_Lvl(user, builder)
         if (context.eventPayload.status == "ok") {
             if (build_checker.status && build_lvl_checker.status) {
                 const golden_cost = await Costing_Finder(JSON.parse(builder.costing), 'gold')

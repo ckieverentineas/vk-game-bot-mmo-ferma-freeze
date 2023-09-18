@@ -15,6 +15,8 @@ import { Member_Control, Member_Controller } from "./module/game/corporation/mem
 import { Trigger } from "@prisma/client";
 import { Planet_Control, Planet_Controller } from "./module/game/account/planet";
 import { Send_Message, Sleep } from "./module/fab/helper";
+import { Research_Control } from "./module/game/player/research";
+import { icotransl_list } from "./module/game/datacenter/resources_translator";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -61,8 +63,8 @@ vk.updates.on('like_add', async (context: Context, next: any) => {
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.likerId } })
 	//console.log(context)
 	if (user_check ) {
-		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { gold: { increment: 100 } } })
-		await Send_Message(user_gift.idvk, `⚙ Вам начислено вознаграждение за лайк ${context.objectType} 100💰. Ваш баланс ${user_gift.gold.toFixed(2)}`)
+		const user_gift = await prisma.user.update({ where: { id: user_check.id }, data: { gold: { increment: 100 }, iron: { increment: 50 }, energy: { increment: 25 } } })
+		await Send_Message(user_gift.idvk, `⚙ Вам начислено вознаграждение за лайк ${context.objectType} 100${icotransl_list['gold'].smile} 50${icotransl_list['metal'].smile} 25${icotransl_list['energy'].smile}. Ваш баланс ${user_gift.gold.toFixed(2)}${icotransl_list['gold'].smile} ${user_gift.iron.toFixed(2)}${icotransl_list['metal'].smile} ${user_gift.energy.toFixed(2)}${icotransl_list['energy'].smile}`)
 	}
 	return await next();
 })
@@ -139,6 +141,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"member_controller": Member_Controller,
 		"worker_control": Worker_Control,
 		"worker_controller": Worker_Controller,
+		"research_control": Research_Control
 	}
 	try {
 		await config[context.eventPayload.command](context, user)
@@ -153,7 +156,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 			await prisma.user.update({ where: { id: user.id }, data: { limiter: 0 } })
 			await prisma.trigger.update({ where: { id: trigger.id }, data: { update: datenow } })
 			await Send_Message(user.idvk, '☠ Ваш рабочий день закончен! Приходите через 10 минут, мы вам сообщим о новом рабочем дне!')
-			await vk.api.messages.sendMessageEventAnswer({
+			/*await vk.api.messages.sendMessageEventAnswer({
 				event_id: context.eventId,
 				user_id: context.userId,
 				peer_id: context.peerId,
@@ -161,7 +164,7 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 					type: "show_snackbar",
 					text: `☠ Ваш рабочий день закончен! Приходите через 5-10 минут, мы вам сообщим о новом рабочем дне!`
 				})
-			})
+			})*/
 			await Sleep(600000)
 			await Send_Message(user.idvk, '✅ Начался новый рабочий день, приступайте к работе!')
 			return await next()

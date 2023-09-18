@@ -23,13 +23,13 @@ async function User_Info(user: User) {
 	}
     let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['metal'].smile} ${icotransl_list['metal'].name}: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Население (есть/надо): ${count_worker_be}/${count_worker_req}\n`
 	const keyboard = new KeyboardBuilder()
-	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control', stat: "health"  }, color: 'secondary' }).row()
-	.callbackButton({ label: '🌐 Корпорация', payload: { command: 'main_menu_corporation', stat: "health"  }, color: 'secondary' })
-	//.callbackButton({ label: '🏛 Здания', payload: { command: 'builder_control', stat: "atk" }, color: 'secondary' })
-	//.callbackButton({ label: '👥 Люди', payload: { command: 'worker_control', stat: "health"  }, color: 'secondary' }).row()
+	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control' }, color: 'secondary' }).row()
+	.callbackButton({ label: '🌐 Корпорация', payload: { command: 'main_menu_corporation' }, color: 'secondary' }).row()
+	.callbackButton({ label: '🧪 Исследования', payload: { command: 'research_control' }, color: 'secondary' }).row()
+	.urlButton({ label: '🍻 Об игре', url: 'https://vk.com/@ferma_bot1-dobro-pozhalovat-v-mmo-ekonomicheskuu-biznes-strategiu' }).row()
 	//.callbackButton({ label: '📈 Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
 	//.callbackButton({ label: '💰>⚡Биржа', payload: { command: 'exchange_control', stat: "health"  }, color: 'secondary' }).row()
-	.callbackButton({ label: '❌', payload: { command: 'main_menu_close', stat: "mana" }, color: 'secondary' }).inline().oneTime() 
+	.callbackButton({ label: '❌', payload: { command: 'main_menu_close' }, color: 'secondary' }).inline().oneTime() 
 	return [keyboard, event_logger]
 }
 export async function User_Menu_Show(context: Context, user: User) {

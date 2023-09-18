@@ -65,8 +65,7 @@ export async function Planet_Control(context: Context, user: User) {
         }
     }
     //новый обьект
-	const planet_counter = await prisma.planet.count({ where: { id_user: user.id } })
-    keyboard.callbackButton({ label: `➕ ${planet_counter*10000*(planet_counter*1000)}⚡`, payload: { command: 'planet_controller', command_sub: 'planet_add' }, color: 'secondary' })
+    keyboard.callbackButton({ label: `➕`, payload: { command: 'planet_controller', command_sub: 'planet_add' }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
@@ -124,7 +123,7 @@ async function Planet_Mega(user: User, target: string) {
     const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } })
     const planet_counter = await prisma.planet.count({ where: { id_user: user.id, name: target } })
     const sel = buildin[target]
-    const price_new = sel.price*(planet_counter**sel.koef_price)
+    const price_new = sel.price*(planet_counter**sel.koef_price)+10
     let event_logger = ''
     const mulmin = 5
     const mulmax = 3
@@ -132,7 +131,7 @@ async function Planet_Mega(user: User, target: string) {
         await prisma.$transaction([
             prisma.planet.create({ data: { 
 				id_user: user.id, id_system: 1, name: target, 
-				coal: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax)), 
+				coal: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax), 
 				gas: await Randomizer_Float(50000*mulmin, 50000*mulmin*mulmax), 
 				oil: await Randomizer_Float(25000*mulmin, 25000*mulmin*mulmax), 
 				slate: await Randomizer_Float(10000, 10000*mulmax),
@@ -155,28 +154,33 @@ async function Planet_Mega(user: User, target: string) {
             console.error(`Ошибка: ${error.message}`);
         });
     } else {
-        event_logger = `⌛ У вас недостает ${(price_new-user.energy).toFixed(2)} энергии для колонизации новой планеты.`
+        event_logger = `⌛ У вас недостает ${(price_new-user.crystal).toFixed(2)} карат для колонизации новой планеты.`
     }
     return event_logger
+}
+type Planet_Selector = {
+    [key: string]: (user: User, target: string) => Promise<string>;
 }
 async function Planet_Add(context: Context, user: User, ) {
     const keyboard = new KeyboardBuilder()
     let event_logger = `❄ Выберите новую планету для постройки:\n\n`
 	const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } }) ? await prisma.system.findFirst({ where: { id: 1 } }) : await prisma.system.create({ data: { name: "Альтера", planet: Math.floor(await Randomizer_Float(1000000000000000000000000, 5000000000000000000000000)) } })
-    console.log(`Во вселенной ${systema.name} осталось ${systema.planet.toFixed(0)} свободных планет`)
+    console.log(`Во вселенной ${systema!.name} осталось ${systema!.planet.toFixed(0)} свободных планет`)
     if (context.eventPayload.selector) {
-        const config = {
+        const config: Planet_Selector = {
             'Планета': Planet_Usual,
             'Планета Мега': Planet_Mega,
         }
         event_logger += await config[context.eventPayload.selector](user, context.eventPayload.selector)
     } else {
-        for (const builder of ['Планета']) {
+        for (const builder of ['Планета', 'Планета Мега']) {
             const sel = buildin[builder]
             const planet_counter = await prisma.planet.count({ where: { id_user: user.id, name: builder } })
-            const price_new = sel.price*(planet_counter**sel.koef_price)
-            keyboard.callbackButton({ label: `➕ ${builder} ${price_new}⚡`, payload: { command: 'planet_controller', command_sub: 'planet_add', current_object: 0, selector: builder }, color: 'secondary' }).row()
+            const price_new = sel.price*(planet_counter**sel.koef_price)+10
+            keyboard.callbackButton({ label: `➕ ${builder}`, payload: { command: 'planet_controller', command_sub: 'planet_add', current_object: 0, selector: builder }, color: 'secondary' }).row()
             event_logger += `\n\n💬 Планета: ${builder}\n ${sel.description}`;
+            event_logger += builder == 'Планета' ? `\n⚙ Требование: ${price_new}/${user.energy.toFixed(2)}${icotransl_list['energy'].smile}` : ''
+            event_logger += builder == 'Планета Мега' ? `\n⚙ Требование: ${price_new}/${user.crystal}${icotransl_list['crystal'].smile}` : ''
         }
     }
     //назад хз куда
