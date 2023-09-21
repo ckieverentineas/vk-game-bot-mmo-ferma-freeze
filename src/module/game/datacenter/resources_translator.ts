@@ -14,7 +14,8 @@ export const icotransl_list: { [key: string]: { name: string, smile: string } } 
     'gold': { name: 'Шекели', smile: '💰'},
     'research': { name: 'Очки исследований', smile: '🧪'},
     'metal': { name: 'Железо', smile: '📏'},
-    'crystal_in': { name: 'Караты неоичещнные', smile: '💠'},
+    'crystal_dirt': { name: 'Караты неочищенные', smile: '💠'},
+    'builder_block': { name: 'Площадки', smile: '⚒'},
 }
 /*🔳🟦◾🟫◻▪🟨◽◼▫🟥⬜🛒
 
