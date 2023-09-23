@@ -66,7 +66,7 @@ export interface Builder_Config_Init {
         require: { [key: string]: { name: string, limit: number, koef: number } },
     }
 }
-export interface Storage {
+export interface Storages {
     [key: string]: {
         name: string, 
         count: number, 

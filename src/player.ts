@@ -397,7 +397,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             const user: User | null = await prisma.user.findFirst({ where: { idvk: target } })
             const [cmd, action, field, value] = context.text.split(' ');
             const operation_list = ['increment', 'decrement']
-            const target_list = ['gold', 'energy', 'iron']
+            const target_list = ['gold', 'energy', 'iron', 'crystal', 'research']
             let updateData: any = {};
             if (operation_list.includes(action) && target_list.includes(field) && parseFloat(value) > 0) {
                 if (action === "increment") {

@@ -217,8 +217,8 @@ async function Builder_Checker_Upgrade(user: User, id_builder: number, lvl_need:
     let status = true
     if (builder_checker.lvl < lvl_need_will) {
         for (let j = builder_checker.lvl; j < lvl_need_will; j++) {
-            gold = builder_configs[i].cost.gold.price*(j)**builder_configs[i].cost.gold.koef
-            metal = builder_configs[i].cost.metal.price*(j)**builder_configs[i].cost.metal.koef
+            gold += builder_configs[i].cost.gold.price*(j)**builder_configs[i].cost.gold.koef
+            metal += builder_configs[i].cost.metal.price*(j)**builder_configs[i].cost.metal.koef
         }
         event_logger += `\n\n📐 Стоимость при улучшении:`
         if (user.gold < gold || user.iron < metal) {
