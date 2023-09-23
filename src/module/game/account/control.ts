@@ -3,13 +3,12 @@ import { vk } from "../../../";
 import { Context, KeyboardBuilder } from "vk-io";
 import prisma from "../../prisma";
 import { icotransl_list } from "../datacenter/resources_translator";
-import { Require } from "../datacenter/builder_config";
 
 async function User_Info(user: User) {
 	const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
 	let count_worker_req = 0
 	let count_worker_be = 0
-	for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
+	/*for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
 		const requires: Require[] = JSON.parse(builder.require)
 		for (const require of requires) {
 			if (require.name == 'worker') {
@@ -20,7 +19,7 @@ async function User_Info(user: User) {
 				}
 			}
 		}
-	}
+	}*/
     let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['metal'].smile} ${icotransl_list['metal'].name}: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Население (есть/надо): ${count_worker_be}/${count_worker_req}\n`
 	const keyboard = new KeyboardBuilder()
 	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control' }, color: 'secondary' }).row()

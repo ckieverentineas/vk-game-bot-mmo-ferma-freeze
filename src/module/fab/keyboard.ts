@@ -1,6 +1,6 @@
 import { KeyboardBuilder } from "vk-io"
 
-async function Keyboard_Universal(data: any, command: string, id_current: number, elements: any) {
+export async function Keyboard_Universal(data: any, command: string, id_current: number, elements: any) {
     const keyboard = new KeyboardBuilder()
     let event_logger = ''
     const limiter = 5
@@ -20,4 +20,5 @@ async function Keyboard_Universal(data: any, command: string, id_current: number
     if (data.length > limiter && id_current < data.length-1) {
         keyboard.callbackButton({ label: '→', payload: { command: `${command}`, storage: elements, target_current: id_current+limiter }, color: 'secondary' })
     }
+    return { event_logger, keyboard }
 }

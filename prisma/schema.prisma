@@ -68,13 +68,13 @@ model Builder {
   id         Int      @id @default(autoincrement())
   name       String
   lvl        Int      @default(1)
-  costing    String   @default("empty")
-  input      String   @default("empty")
-  output     String   @default("empty")
-  require    String   @default("empty")
+  cost String?
+  input String?
+  storage String?
+  output String?
+  require String?
   id_user    Int
   id_planet  Int?
-  upgradeble Boolean  @default(true)
   crdate     DateTime @default(now())
   update     DateTime @default(now())
   user       User     @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: Cascade)

@@ -1,7 +1,7 @@
-/*import { User, Builder, Planet, Corporation, Corporation_Builder } from "@prisma/client"
+import { User, Builder, Planet, Corporation, Corporation_Builder } from "@prisma/client"
 import { Context } from "vk-io"
 import prisma from "../../prisma";
-import { Input, Output, Require } from "../datacenter/builder_config";
+import { Input, Output, Require, builder_config } from "../datacenter/builder_config";
 import Generator_Nickname from "../../../module/fab/generator_name";
 import { Randomizer_Float } from "../service";
 import { Rand_Int } from "../../../module/fab/random";
@@ -68,21 +68,13 @@ async function Mine_Controller(user: User, builder: Builder, id_planet: number) 
     if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
-    const inputs_storage: Input[] = JSON.parse(storage.input)
-    const inputs_mine: Input[] = JSON.parse(builder.input)
-
-    let global_koef = 0
-    const requires: Require[] = JSON.parse(builder.require)
-    for (const require of requires) {
-        if (require.name == 'worker') {
-            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
-            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
-            if (worker_check != Math.floor(require.limit)) {
-                event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
-            }
-        }
+    const inputs_storage: Storage = JSON.parse(storage.storage!)
+    const builse = builder_config[builder.name]
+    const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+    const global_koef =  worker_check <= Math.floor(builse.require.worker.limit) ? worker_check/Math.floor(builse.require.worker.limit) : 1
+    if (worker_check != Math.floor(builse.require.worker.limit)) {
+        event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
     }
-    //let event_logger = ``
     event_logger += `\n🔔 ${builder.name}-${builder.id}: `
     const income_wil = { coal: 0, gas: 0, oil: 0, slate: 0, turf: 0, uranium: 0, iron: 0, golden: 0, artefact: 0, crystal: 0 }
     for (const input of inputs_mine) {
@@ -706,4 +698,3 @@ async function Laboratory_Controller(user: User, builder: Builder, id_planet: nu
     }
     return `${event_logger}`
 }
-*/

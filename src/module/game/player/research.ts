@@ -2,7 +2,7 @@ import { Research, User } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
-import { buildin } from "../datacenter/builder_config";
+import { builder_config, builder_config_list } from "../datacenter/builder_config";
 import { icotransl_list } from "../datacenter/resources_translator";
 
 export async function Research_Control(context: Context, user: User) {
@@ -31,20 +31,20 @@ export async function Research_Control(context: Context, user: User) {
         const limiter = 5
         let counter = 0
         
-        for (let i=cur; i < buildin.length && counter < limiter; i++) {
-            const builder = buildin[i]
-            keyboard.callbackButton({ label: `➕ ${builder.builder}`, payload: { command: 'research_control', selector: builder.builder }, color: 'secondary' }).row()
-            const research: Research | null = await prisma.research.findFirst({ where: { id_user: user.id, name: builder.builder } })
-            event_logger += `\n\n💬 Технология: ${builder.builder}\n ${builder.description}\n📝 Уровень: ${research?.lvl || 10 }`;
+        for (let i=cur; i < builder_config_list.length && counter < limiter; i++) {
+            const builder = builder_config[builder_config_list[i]]
+            keyboard.callbackButton({ label: `${icotransl_list['research'].smile} ${builder.name}`, payload: { command: 'research_control', selector: builder.name }, color: 'secondary' }).row()
+            const research: Research | null = await prisma.research.findFirst({ where: { id_user: user.id, name: builder.name } })
+            event_logger += `\n\n💬 Технология: ${builder.name}\n ${builder.description}\n📝 Уровень: ${research?.lvl || 10 }`;
             counter++
         }
-        event_logger += `\n\n${buildin.length > 1 ? `~~~~ ${cur + buildin.length > cur+limiter ? limiter : limiter-(buildin.length-cur)} из ${buildin.length} ~~~~` : ''}`
+        event_logger += `\n\n${builder_config_list.length > 1 ? `~~~~ ${builder_config_list.length > limiter ? cur+limiter : limiter-(builder_config_list.length-cur)} из ${builder_config_list.length} ~~~~` : ''}`
         //предыдущий офис
-        if (buildin.length > limiter && cur > limiter-1) {
+        if (builder_config_list.length > limiter && cur > limiter-1) {
             keyboard.callbackButton({ label: '←', payload: { command: 'research_control', office_current: 0, target_current: cur-limiter }, color: 'secondary' })
         }
         //следующий офис
-        if (buildin.length > limiter && cur < buildin.length-1) {
+        if (builder_config_list.length > limiter && cur < builder_config_list.length-limiter) {
             keyboard.callbackButton({ label: '→', payload: { command: 'research_control', office_current: 0, target_current: cur+limiter }, color: 'secondary' })
         }
     }

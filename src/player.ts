@@ -8,6 +8,7 @@ import { version_soft } from "./module/game/datacenter/system";
 import { Send_Message } from "./module/fab/helper";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
 import { Resources } from "module/game/player/statistics";
+import { builder_config } from "./module/game/datacenter/builder_config";
 
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
@@ -500,19 +501,24 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
     hearManager.hear(/!мигрируем/, async (context) => {
         if (context.isOutbox == false && root.includes(String(context.senderId)) && context.text) {
             const countbul = await prisma.builder.count({})
-            await context.send(`Запуск сноса ${countbul} устаревших построек`)
-            for (const user of await prisma.user.findMany({})) {
-                let sum = 0
-                let count = 0
-                for (const build of await prisma.builder.findMany({ where: { id_user: user.id } })) {
-                    //sum += build.cost
-                    await prisma.builder.delete({ where: { id: build.id } })
-                    count++
+            await context.send(`Запуск миграции ${countbul} построек`)
+            let del_will = 0
+            let change_will = 0
+            for (const builder of await prisma.builder.findMany({})) {
+                const planet_check = await prisma.planet.findFirst({ where: { id: builder.id_planet || 0 } })
+                if (!planet_check) {
+                    await prisma.builder.delete({ where: { id: builder.id } })
+                    del_will++
+                } else {
+                    const storage_init = builder_config[builder.name].storage ? builder_config[builder.name].storage : null
+                    if (storage_init) {
+                        await prisma.builder.update({ where: { id: builder.id }, data: { storage: JSON.stringify(storage_init) } })
+                        change_will++
+                    }
                 }
-                await prisma.user.update({ where: { id: user.id }, data: { gold: { increment: sum } } })
-                await Send_Message(user.idvk, `Для успешной миграции на новое обновление нам пришлось снести вам ${count} зданий, вам на счет начислено ${sum} шекелей`)
-                await Send_Message(chat_id, `Для успешной миграции на новое обновление нам пришлось снести [https://vk.com/id${user.idvk}|${user.name.slice(0, 20)}] ${count} зданий, ему/ей на счет начислено ${sum} шекелей`)
             }
+            await Send_Message(context.senderId, `Для успешной миграции с builders 2.0 до 3.0 было обнаружено ${countbul} зданий. ${del_will} зданий было уничтожено, как не принадлежащих ни к одной планете. ${change_will} зданий было обновлено для инициализации хранилища`)
+            await Send_Message(chat_id, `Для успешной миграции с builders 2.0 до 3.0 было обнаружено ${countbul} зданий. ${del_will} зданий было уничтожено, как не принадлежащих ни к одной планете. ${change_will} зданий было обновлено для инициализации хранилища`)
             const countbul2 = await prisma.builder.count({})
             await context.send(`Сейчас построек на сервере ${countbul2}, миграция успешно завершена`)
         }

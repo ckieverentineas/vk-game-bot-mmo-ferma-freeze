@@ -4,7 +4,7 @@ import QuestionManager, { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { User_Register } from "./module/game/account/tutorial";
 import { Main_Menu, Main_Menu_Close, User_Menu_Show } from "./module/game/account/control";
-import { Builder_Control, Builder_Controller } from "./module/game/player/builder";
+import { Builder_Control, Builder_Controller } from "./module/game/player/builder3";
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
 import { registerUserRoutes } from "./player";
