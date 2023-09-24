@@ -15,7 +15,7 @@ import { Member_Control, Member_Controller } from "./module/game/corporation/mem
 import { Trigger } from "@prisma/client";
 import { Planet_Control, Planet_Controller } from "./module/game/account/planet";
 import { Send_Message, Sleep } from "./module/fab/helper";
-import { Research_Control } from "./module/game/player/research";
+import { Research_Control, Research_Controller } from "./module/game/player/research";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
 dotenv.config();
 
@@ -141,7 +141,8 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"member_controller": Member_Controller,
 		"worker_control": Worker_Control,
 		"worker_controller": Worker_Controller,
-		"research_control": Research_Control
+		"research_control": Research_Control,
+		"research_controller": Research_Controller
 	}
 	try {
 		await config[context.eventPayload.command](context, user)

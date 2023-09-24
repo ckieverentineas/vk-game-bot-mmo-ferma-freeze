@@ -267,7 +267,7 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
             }
         } else {
             event_logger = `Вы уверены, что хотите улучшить здание ${builder.name}-${builder.id}?\n\n${build_checker?.message}`
-            keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, status: "ok", id_planet: id_planet, id_builder_sent: id_builder_sent, limapro: limapro }, color: 'secondary' })
+            keyboard.callbackButton({ label: 'ОК', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, status: "ok", id_planet: id_planet, id_builder_sent: id_builder_sent, limapro: limapro }, color: 'secondary' })
             keyboard.callbackButton({ label: 'Хочу x2', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, id_planet: id_planet, id_builder_sent: id_builder_sent, limapro: 2 }, color: 'secondary' }).row()
             keyboard.callbackButton({ label: 'Хочу x5', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, id_planet: id_planet, id_builder_sent: id_builder_sent, limapro: 5 }, color: 'secondary' })
             keyboard.callbackButton({ label: 'Хочу x10', payload: { command: 'builder_controller', command_sub: 'builder_upgrade', office_current: cur, target: builder.id, id_planet: id_planet, id_builder_sent: id_builder_sent, limapro: 10 }, color: 'secondary' }).row()

@@ -41,8 +41,8 @@ export async function Builder_Lifer(user: User, builder: Builder, id_planet: num
 
     }
     try {
-        calc += await config[builder.name](user, builder, id_planet)
         console.log(`Запуск обработки ${builder.name} для пользователя ${user.id} на планете ${id_planet}`)
+        calc += await config[builder.name](user, builder, id_planet)
     } catch (e) {
         console.log(`Нет такой постройки  ${e}`)
     }
@@ -494,7 +494,7 @@ async function Laboratory_Controller(user: User, builder: Builder, id_planet: nu
     }
     // просчитываем потребление за прошедшее время
     const crystal_dirt_outcome_will = Math.floor(((builse.output!.crystal_dirt.outcome*((builder.lvl)**builse.output!.crystal_dirt.koef))) * global_koef)
-    const crystal_dirt_outcome = storage_base.crystal_dirt.count-crystal_dirt_outcome_will > 0 ? crystal_dirt_outcome_will : storage_base.artefact.count-1 > 0 ? 1 : 0
+    const crystal_dirt_outcome = storage_base.crystal_dirt.count-crystal_dirt_outcome_will > 0 ? crystal_dirt_outcome_will : storage_base.crystal_dirt.count-1 > 0 ? 1 : 0
     storage_base.crystal_dirt.count -= crystal_dirt_outcome
     const energy_outcome = ((builse.output!.energy.outcome*((builder.lvl)**builse.output!.energy.koef))*(Number(datenow)-Number(dateold))/builse.output!.energy.time) * global_koef
     // просчитываем прибыль за прошедшее время
