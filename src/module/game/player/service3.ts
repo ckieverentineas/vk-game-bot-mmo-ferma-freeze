@@ -1,10 +1,9 @@
 import { User, Builder, Planet, Corporation, Corporation_Builder } from "@prisma/client"
 import { Context } from "vk-io"
 import prisma from "../../prisma";
-import { Input, Output, Require, Storages, builder_config } from "../datacenter/builder_config";
+import { Storages, builder_config } from "../datacenter/builder_config";
 import Generator_Nickname from "../../../module/fab/generator_name";
 import { Randomizer_Float } from "../service";
-import { Rand_Int } from "../../../module/fab/random";
 import { icotransl_list } from "../datacenter/resources_translator";
 import { Send_Message } from "../../../module/fab/helper";
 import { chat_id } from "../../../index";
@@ -48,18 +47,6 @@ export async function Builder_Lifer(user: User, builder: Builder, id_planet: num
         console.log(`Нет такой постройки  ${e}`)
     }
     return calc
-}
-async function Resource_Finder_Nafig(input_storage: Input[], input_mine: Input, target: string, datenow: Date, dateold: Date, global_koef: number) {
-    const data = { income: 0, counter: 0 }
-    for (let i=0; i < input_storage.length; i++) {
-        const store = input_storage[i]
-        if (store.name == target) {
-            console.log(`${input_mine.name}: ${input_mine.income} * (${Number(datenow)} - ${Number(dateold)})/${input_mine.time}*${global_koef}=${input_mine.income * (Number(datenow)-Number(dateold))/input_mine.time*global_koef}`)
-            data.income = input_mine.income * (Number(datenow)-Number(dateold))/input_mine.time*global_koef
-            data.counter = i
-        }
-    }
-    return data
 }
 
 async function Mine_Controller(user: User, builder: Builder, id_planet: number) {
@@ -132,18 +119,6 @@ async function Mine_Controller(user: User, builder: Builder, id_planet: number) 
     return `${event_logger}`
 }
 
-async function Resource_Finder_Nafig_Outcome(input_storage: Input[], input_mine: Output, target: string, datenow: Date, dateold: Date, global_koef: number) {
-    const data = { income: 0, counter: 0 }
-    for (let i=0; i < input_storage.length; i++) {
-        const store = input_storage[i]
-        if (store.name == target) {
-            console.log(`${input_mine.name}: ${input_mine.outcome} * (${Number(datenow)} - ${Number(dateold)})/${input_mine.time}*${global_koef}=${input_mine.outcome * (Number(datenow)-Number(dateold))/input_mine.time*global_koef}`)
-            data.income = input_mine.outcome * (Number(datenow)-Number(dateold))/input_mine.time*global_koef
-            data.counter = i
-        }
-    }
-    return data
-}
 async function Powerstation_Controller(user: User, builder: Builder, id_planet: number) {
     let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
@@ -330,86 +305,81 @@ async function Factory_Controller(user: User, builder: Builder, id_planet: numbe
 async function City_Controller(user: User, builder: Builder, id_planet: number) {
     let event_logger = ''
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
+    if (!planet) { return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
-    const inputs_mine: Input[] = JSON.parse(builder.input)
-    const outputs: Output[] = JSON.parse(builder.output)
-    event_logger += `\n🔔 ${builder.name}-${builder.id}: `
-    for (const output of outputs) {
-        if (output.name == 'energy') {
-            const calc_will = output.outcome * (Number(datenow)-Number(dateold))/output.time
+    const builse = builder_config[builder.name]
+    const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+    const worker_calc = builse.require.worker.limit*(builder.lvl**builse.require.worker.koef)
+    const global_koef =  worker_check <= Math.floor(worker_calc) ? worker_check/Math.floor(worker_calc) : 1
+    if (worker_check != Math.floor(worker_calc)) {
+        event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
+    }
+    const energy_outcome = ((builse.output!.energy.outcome*((builder.lvl)**builse.output!.energy.koef))*(Number(datenow)-Number(dateold))/builse.output!.energy.time) * global_koef
+    await prisma.$transaction([
+        prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: energy_outcome } } }),
+        prisma.builder.update({ where: { id: builder.id }, data: { update: new Date(datenow) } })
+    ]).then(([]) => {
+        console.log(`Успешная работа ${builder.name}-${builder.id}`)
+    })
+    .catch((error) => {
+        console.error(`Ошибка работы ${builder.name}-${builder.id}: ${error.message}`);
+    });
+    // считаем количество рабочих, которых можно поселить на этой планете
+    const cities = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: planet.id, name: "Города" } })
+    let worker_count_city = 0
+    for (const city of cities) {
+        worker_count_city += Math.floor(builder_config[city.name].storage!.worker.limit*((city.lvl)**builder_config[city.name].storage!.worker.koef_limit))
+        
+    }
+    const worker_count_planet = await prisma.worker.count({ where: { id_planet: id_planet, id_user: user.id } })
+    let worker_limiter = worker_count_city - worker_count_planet
+    if (worker_count_planet < worker_count_city) {
+        // эвакуация рабочих с потерянных планет
+        for (const worker of await prisma.worker.findMany({ where: { id_user: user.id } })) {
+            if (worker.id_planet != id_planet ) {
+                const worker_planet_check = await prisma.planet.findFirst({ where: { id: worker.id_planet || 0 } })
+                if (!worker_planet_check && worker_limiter > 0) {
+                    await prisma.$transaction([
+                        prisma.worker.update({ where: { id: worker.id }, data: { id_planet: id_planet, update: datenow, id_builder: 0 } }),
+                    ]).then(([]) => {
+                        console.log(`Города успешно выявили рабочего ${worker.name}-${worker.id} с несуществующих планет и эвакуировали на ${planet.name}-${planet.id}`)
+                        worker_limiter--
+                    }).catch((error) => {
+                        console.error(`Ошибка эвакуации рабочих на ${planet.name}-${planet.id}: ${error.message}`);
+                    });
+                }
+            }
+        }
+        // докупка рабочих
+        if (worker_limiter > 0) {
             await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: calc_will }, update: datenow } }),
-                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
-            ]).then(([]) => {
-                event_logger += ` -${calc_will.toFixed(2)}${icotransl_list[output.name].smile} `
-                console.log('Успешное потребление городами нафиг')
-            })
-            .catch((error) => {
-                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
+                prisma.worker.create({ data: { id_user: user.id, name: await Generator_Nickname(), id_planet: id_planet } }),
+            ]).then(([worker_new]) => {
+                console.log(`Города успешно наняли недостающего рабочего ${worker_new.name}-${worker_new.id} на ${planet.name}-${planet.id}`)
+            }).catch((error) => {
                 console.error(`Ошибка: ${error.message}`);
             });
         }
     }
-    for (const input of inputs_mine) {
-        if (input.name == 'worker') {
-            const worker_planet = input.income
-            const worker_check = await prisma.worker.count({ where: { id_planet: id_planet, id_user: user.id } })
-            console.log(`${worker_check} < ${worker_planet}`)
-            let limiter = worker_planet - worker_check
-            if (worker_check < worker_planet) {
-                for (const worker of await prisma.worker.findMany({ where: { id_user: user.id } })) {
-                    if (worker.id_planet != id_planet ) {
-                        const worker_planet_check = await prisma.planet.findFirst({ where: { id: worker.id_planet || 0 } })
-                        if (!worker_planet_check && limiter > 0) {
-                            await prisma.$transaction([
-                                prisma.worker.update({ where: { id: worker.id }, data: { id_planet: id_planet, update: datenow, id_builder: 0 } }),
-                                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
-                            ]).then(([]) => {
-                                console.log(`Города успешно выявили рабочего ${worker.name}-${worker.id} с несуществующих планет и эвакуировали на ${planet.name}-${planet.id}`)
-                                limiter--
-                            }).catch((error) => {
-                                console.error(`Ошибка: ${error.message}`);
-                            });
-                        }
-                    }
-                }
-                if (limiter > 0) {
+    // модуль трудоустройства на работу рабочих
+    const builder_on_planet: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })
+    for (const builderplan of builder_on_planet) {
+        const worker_on_builder_need = Math.floor(builder_config[builderplan.name].require!.worker.limit*((builderplan.lvl)**builder_config[builderplan.name].require!.worker.koef))
+        const worker_on_builder_be = await prisma.worker.count({ where: { id_builder: builderplan.id, id_user: user.id, id_planet: id_planet } })
+        if (worker_on_builder_be < worker_on_builder_need) {
+            let limiter_list = worker_on_builder_need - worker_on_builder_be
+            for (const worker_sel of await prisma.worker.findMany({ where: { id_user: user.id, id_planet: id_planet } })) {
+                const worker_clear = await prisma.builder.findFirst({ where: { id: worker_sel.id_builder || 0 } })
+                if (!worker_clear && limiter_list > 0) {
                     await prisma.$transaction([
-                        prisma.worker.create({ data: { id_user: user.id, name: await Generator_Nickname(), id_planet: id_planet } }),
-                        prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
-                    ]).then(([worker_new]) => {
-                        console.log(`Города успешно наняли недостающего рабочего ${worker_new.name}-${worker_new.id} на ${planet.name}-${planet.id}`)
+                        prisma.worker.update({ where: { id: worker_sel.id }, data: { update: datenow, id_builder: builderplan.id } }),
+                    ]).then(([]) => {
+                        console.log(`Города успешно выявили безработного ${worker_sel.name}-${worker_sel.id} и устроили на работу в ${builderplan.name}-${builderplan.id} на ${planet.name}-${planet.id}`)
+                        limiter_list--
                     }).catch((error) => {
                         console.error(`Ошибка: ${error.message}`);
                     });
-                }
-            }
-            const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })
-            for (const builder of builder_list) {
-                const requires_list: Require[] = JSON.parse(builder.require)
-                for (const require of requires_list) {
-                    if (require.name == 'worker') {
-                        const worker_check_list = await prisma.worker.count({ where: { id_builder: builder.id } })
-                        if (worker_check_list < Math.floor(require.limit)) {
-                            let limiter_list = Math.floor(require.limit) - worker_check_list
-                            for (const worker_sel of await prisma.worker.findMany({ where: { id_planet: id_planet } })) {
-                                const worker_clear = await prisma.builder.findFirst({ where: { id: worker_sel.id_builder || 0 } })
-                                if (!worker_clear && limiter_list > 0) {
-                                    await prisma.$transaction([
-                                        prisma.worker.update({ where: { id: worker_sel.id }, data: { update: datenow, id_builder: builder.id } }),
-                                        prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
-                                    ]).then(([]) => {
-                                        console.log(`Города успешно выявили безработного ${worker_sel.name}-${worker_sel.id} и устроили на работу в ${builder.name}-${builder.id} на ${planet.name}-${planet.id}`)
-                                        limiter_list--
-                                    }).catch((error) => {
-                                        console.error(`Ошибка: ${error.message}`);
-                                    });
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -420,178 +390,131 @@ async function City_Controller(user: User, builder: Builder, id_planet: number) 
 async function Storage_Controller(user: User, builder: Builder, id_planet: number) {
     let event_logger = ''
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
+    if (!planet) { return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
-    const outputs: Output[] = JSON.parse(builder.output)
-    event_logger += `\n🔔 ${builder.name}-${builder.id}: `
-    for (const output of outputs) {
-        if (output.name == 'energy') {
-            const calc_will = output.outcome * (Number(datenow)-Number(dateold))/output.time
-            await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: calc_will }, update: datenow } }),
-                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
-            ]).then(([]) => {
-                event_logger += ` -${calc_will.toFixed(2)}${icotransl_list[output.name].smile} `
-                console.log('Успешное потребление Склада нафиг')
-            })
-            .catch((error) => {
-                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
-                console.error(`Ошибка: ${error.message}`);
-            });
-        }
+    const builse = builder_config[builder.name]
+    const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+    const worker_calc = builse.require.worker.limit*(builder.lvl**builse.require.worker.koef)
+    const global_koef =  worker_check <= Math.floor(worker_calc) ? worker_check/Math.floor(worker_calc) : 1
+    if (worker_check != Math.floor(worker_calc)) {
+        event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
     }
+    // просчитываем потребление за прошедшее время
+    const energy_outcome = ((builse.output!.energy.outcome*((builder.lvl)**builse.output!.energy.koef))*(Number(datenow)-Number(dateold))/builse.output!.energy.time) * global_koef
+    await prisma.$transaction([
+        prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: energy_outcome } } }),
+        prisma.builder.update({ where: { id: builder.id }, data: { update: new Date(datenow) } })
+    ]).then(([]) => {
+        console.log(`Успешная работа ${builder.name}-${builder.id}`)
+    })
+    .catch((error) => {
+        console.error(`Ошибка работы ${builder.name}-${builder.id}: ${error.message}`);
+    });
     return `${event_logger}`
 }
 
 async function Archaeological_Center_Controller(user: User, builder: Builder, id_planet: number) {
     let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
+    if (!storage) { return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
+    if (!planet) { return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
-    const inputs_storage: Input[] = JSON.parse(storage.input)
-
-    let global_koef = 0
-    const requires: Require[] = JSON.parse(builder.require)
-    for (const require of requires) {
-        if (require.name == 'worker') {
-            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
-            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
-            if (worker_check != Math.floor(require.limit)) {
-                event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
-            }
+    const storage_base: Storages = JSON.parse(storage.storage!)
+    const builse = builder_config[builder.name]
+    const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+    const worker_calc = builse.require.worker.limit*(builder.lvl**builse.require.worker.koef)
+    const global_koef =  worker_check <= Math.floor(worker_calc) ? worker_check/Math.floor(worker_calc) : 1
+    if (worker_check != Math.floor(worker_calc)) {
+        event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
+    }
+    // просчитываем потребление за прошедшее время
+    const artefact_outcome_will = Math.floor(((builse.output!.artefact.outcome*((builder.lvl)**builse.output!.artefact.koef))) * global_koef)
+    const artefact_outcome = storage_base.artefact.count-artefact_outcome_will > 0 ? artefact_outcome_will : storage_base.artefact.count-1 > 0 ? 1 : 0
+    storage_base.artefact.count -= artefact_outcome
+    const energy_outcome = ((builse.output!.energy.outcome*((builder.lvl)**builse.output!.energy.koef))*(Number(datenow)-Number(dateold))/builse.output!.energy.time) * global_koef
+    // просчитываем прибыль за прошедшее время
+    let metal_art = 0
+    let gold_art = 0
+    let energy_art = 0
+    let build_art = 0
+    if (artefact_outcome >= 1) {
+        for (let i= 0; i < artefact_outcome; i++) {
+            metal_art += await Randomizer_Float(0, ((builse.input!.metal.income*((builder.lvl)**builse.input!.metal.koef))) * global_koef)
+            gold_art += await Randomizer_Float(0, ((builse.input!.gold.income*((builder.lvl)**builse.input!.gold.koef))) * global_koef)
+            energy_art += await Randomizer_Float(0, ((builse.input!.energy.income*((builder.lvl)**builse.input!.energy.koef))) * global_koef)
+            build_art += await Randomizer_Float(0, 1000) > 900 ? ((builse.input!.artefact.income*((builder.lvl)**builse.input!.artefact.koef))) : 0
         }
     }
-    event_logger += `\n🔔 ${builder.name}-${builder.id}: `
-    const outputs: Output[] = JSON.parse(builder.output)
-    for (const output of outputs) {
-        if (output.name == 'artefact') {
-            const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'artefact', datenow, dateold, global_koef)
-            const art_need = Math.floor(output.outcome)
-            console.log(`${art_need} < ${inputs_storage[data.counter].income} && ${inputs_storage[data.counter].income} >= 1`)
-            if ( art_need < inputs_storage[data.counter].income && inputs_storage[data.counter].income >= 1 ) {
-                inputs_storage[data.counter].income -= art_need
-                const iron_art = await Randomizer_Float(0, 100)*art_need
-                const gold_art = await Randomizer_Float(0, 1000)*art_need
-                const energy_art = await Randomizer_Float(0, 10000)*art_need
-                const build = await Randomizer_Float(0, 1000) > 900 ? 1*art_need : 0
-                const selector = await Rand_Int(2)
-                const speed_new = selector == 0 ? 0.001 : 0
-                const income_new = selector == 1 ? 1.01 : 1
-                const count_worker = await prisma.worker.count({ where: { id_planet: id_planet } })
-                await prisma.$transaction([
-                    prisma.worker.updateMany({ where: { id_user: user.id, id_planet: id_planet }, data: { income: { multiply: income_new }, speed: { increment: speed_new } } }),
-                    prisma.user.update({ where: { id: user.id }, data: { energy: { increment: energy_art },  gold: { increment: gold_art }, iron: { increment: iron_art }, update: datenow } }),
-                    prisma.planet.update({ where: { id: id_planet }, data: { update: datenow, build: { increment: build } } }),
-                    prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
-                ]).then(() => {
-                    if (build > 0) {
-                        Send_Message(chat_id, `🌟 Поздравляем [https://vk.com/id${user.idvk}|${user.name}] c прокачкой Планеты-${planet.id} на ${build} площадки`)
-                    }
-                    event_logger += `${icotransl_list[output.name].smile} +${iron_art.toFixed(2)}${icotransl_list['iron'].smile}, +${gold_art.toFixed(2)}${icotransl_list['gold'].smile}, +${energy_art.toFixed(2)}${icotransl_list['energy'].smile} +${build}⚒ 👥${count_worker} --> ${speed_new > 0 ? '+0.001🧭' : '*0.01%📈' }\n` 
-                    console.log(`C артефактов выпало: железа ${iron_art}, шекелей ${gold_art}, энергии ${energy_art} площадок ${build} ⌛ Работники ${user.idvk} получили повышение ${speed_new > 0 ? 'скорости на 0.001' : 'прибыли на 0.01%' }\n`);
-                })
-                .catch((error) => {
-                    //event_logger += `⌛ Произошла ошибка прокачки рабочих, попробуйте позже` 
-                    console.error(`Ошибка: ${error.message}`);
-                });
-                await Update_Statistics(user, [{ name: 'artefact', value: art_need} ])
-            }
+    let succeser = false
+    await prisma.$transaction([
+        prisma.builder.update({ where: { id: storage.id }, data: { storage: JSON.stringify(storage_base) } }),
+        prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: energy_outcome } } }),
+        prisma.user.update({ where: { id: user.id }, data: { energy: { increment: energy_art },  gold: { increment: gold_art }, iron: { increment: metal_art } } }),
+        prisma.builder.update({ where: { id: builder.id }, data: { update: new Date(datenow) } }),
+        prisma.planet.update({ where: { id: id_planet }, data: { update: datenow, build: { increment: build_art } } }),
+    ]).then(([]) => {
+        console.log(`Успешная работа ${builder.name}-${builder.id}`)
+        if (build_art > 0) {
+            Send_Message(chat_id, `🌟 Поздравляем [https://vk.com/id${user.idvk}|${user.name}] c прокачкой Планеты-${planet.id} на ${build_art} площадки`)
+            event_logger += `\n🔔 ${builder.name}-${builder.id}: +${metal_art.toFixed(2)}${icotransl_list['metal'].smile}, +${gold_art.toFixed(2)}${icotransl_list['gold'].smile}, +${energy_art.toFixed(2)}${icotransl_list['energy'].smile} +${build_art}${icotransl_list['builder_block'].smile} \n` 
+        } 
+        if (storage_base.artefact.count >= 1) {
+            event_logger += `\n🔔 ${builder.name}-${builder.id}: на складе осталось ${storage_base.artefact.count.toFixed(2)} артефактов\n`
         }
-        if (output.name == 'energy') {
-            const calc_will = output.outcome * (Number(datenow)-Number(dateold))/output.time
-            await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: calc_will }, update: datenow } }),
-                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
-            ]).then(([]) => {
-                event_logger += ` -${calc_will.toFixed(2)}${icotransl_list[output.name].smile} `
-                console.log('Успешное потребление Археологического центра нафиг')
-            })
-            .catch((error) => {
-                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
-                console.error(`Ошибка: ${error.message}`);
-            });
-        }
+        console.log(`C артефактов выпало: ${builder.name}-${builder.id}: +${metal_art.toFixed(2)}${icotransl_list['metal'].smile}, +${gold_art.toFixed(2)}${icotransl_list['gold'].smile}, +${energy_art.toFixed(2)}${icotransl_list['energy'].smile} +${build_art}${icotransl_list['builder_block'].smile}\n`);
+        succeser = true
+    })
+    .catch((error) => {
+        console.error(`Ошибка работы ${builder.name}-${builder.id}: ${error.message}`);
+    });
+    if (succeser) {
+        await Update_Statistics(user, [{ name: 'iron', value: metal_art }, { name: 'gold', value: gold_art }, { name: 'energy', value: energy_art }])
     }
     return `${event_logger}`
 }
 
 async function Laboratory_Controller(user: User, builder: Builder, id_planet: number) {
     let event_logger = ''
+    const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
+    if (!storage) { return event_logger }
     const planet: Planet | null = await prisma.planet.findFirst({ where: { id: id_planet } })
-    if (!planet) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужна планета\n`; return event_logger }
+    if (!planet) { return event_logger }
     const datenow: Date = new Date()
     const dateold: Date = new Date(builder.update)
-
-    let global_koef = 0
-    const requires: Require[] = JSON.parse(builder.require)
-    for (const require of requires) {
-        if (require.name == 'worker') {
-            const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
-            global_koef = worker_check <= Math.floor(require.limit) ? worker_check/Math.floor(require.limit) : 1
-            if (worker_check != Math.floor(require.limit)) {
-                event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
-            }
-        }
+    const storage_base: Storages = JSON.parse(storage.storage!)
+    const builse = builder_config[builder.name]
+    const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
+    const worker_calc = builse.require.worker.limit*(builder.lvl**builse.require.worker.koef)
+    const global_koef =  worker_check <= Math.floor(worker_calc) ? worker_check/Math.floor(worker_calc) : 1
+    if (worker_check != Math.floor(worker_calc)) {
+        event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
     }
-    event_logger += `\n🔔 ${builder.name}-${builder.id}: `
-    const outputs: Output[] = JSON.parse(builder.output)
-    for (const output of outputs) {
-        if (output.name == 'energy') {
-            const calc_will = output.outcome * (Number(datenow)-Number(dateold))/output.time
-            await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: calc_will }, update: datenow } }),
-                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } })
-            ]).then(([]) => {
-                event_logger += ` -${calc_will.toFixed(2)}${icotransl_list[output.name].smile} `
-                console.log('Успешное потребление Лабораторией нафиг')
-            })
-            .catch((error) => {
-                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
-                console.error(`Ошибка: ${error.message}`);
-            });
-        }
-    }
-    const inputs_mine: Input[] = JSON.parse(builder.input)
-    for (const input of inputs_mine) {
-        if (input.name == 'research') {
-            console.log(`${input.name}: ${input.income} * (${Number(datenow)} - ${Number(dateold)})/${input.time}*${global_koef}=${input.income * (Number(datenow)-Number(dateold))/input.time*global_koef}`)
-            const data = input.income * (Number(datenow)-Number(dateold))/input.time*global_koef
-            console.log(`Добавлено очков исследования: ${data}`)
-            await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { research: { increment: data }, update: datenow } }),
-                prisma.builder.update({ where: { id: builder.id }, data: { update: datenow } }),
-            ]).then(([]) => {
-                event_logger += ` +${data.toFixed(2)}${icotransl_list[input.name].smile} `
-                console.log('Успешная работа Лаборатории')
-            })
-            .catch((error) => {
-                //event_logger = `⌛ Произошла ошибка просчета добычи с шахты, попробуйте позже` 
-                console.error(`Ошибка: ${error.message}`);
-            });
-        }
-    }
-    const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
-    if (!storage) { event_logger += `🔔🔕 Для работы ${builder.name}-${builder.id} нужен Склад\n`; return event_logger }
-    const inputs_storage: Input[] = JSON.parse(storage.input)
-    const output: Output = { name: 'crystal', outcome: 1, koef: 0, time: 0}
-    const data = await Resource_Finder_Nafig_Outcome(inputs_storage, output, 'crystal', datenow, dateold, global_koef)
-    const crystal_need = Math.floor(output.outcome)
-    if ( crystal_need < inputs_storage[data.counter].income && inputs_storage[data.counter].income >= 1 ) {
-        inputs_storage[data.counter].income -= crystal_need
-        await prisma.$transaction([
-            prisma.user.update({ where: { id: user.id }, data: { crystal: { increment: crystal_need }, update: datenow } }),
-            prisma.builder.update({ where: { id: storage.id }, data: { input: JSON.stringify(inputs_storage), update: datenow } })
-        ]).then(() => {
-            event_logger += ` +${crystal_need.toFixed(2)}${icotransl_list['crystal_in'].smile}-->${icotransl_list['crystal'].smile} ` 
-        })
-        .catch((error) => {
-            console.error(`Ошибка: ${error.message}`);
-        });
-        await Update_Statistics(user, [{ name: 'crystal', value: crystal_need} ])
+    // просчитываем потребление за прошедшее время
+    const crystal_dirt_outcome_will = Math.floor(((builse.output!.crystal_dirt.outcome*((builder.lvl)**builse.output!.crystal_dirt.koef))) * global_koef)
+    const crystal_dirt_outcome = storage_base.crystal_dirt.count-crystal_dirt_outcome_will > 0 ? crystal_dirt_outcome_will : storage_base.artefact.count-1 > 0 ? 1 : 0
+    storage_base.crystal_dirt.count -= crystal_dirt_outcome
+    const energy_outcome = ((builse.output!.energy.outcome*((builder.lvl)**builse.output!.energy.koef))*(Number(datenow)-Number(dateold))/builse.output!.energy.time) * global_koef
+    // просчитываем прибыль за прошедшее время
+    const koef_crystal = crystal_dirt_outcome/crystal_dirt_outcome_will
+    const crystal_income = ((builse.input!.crystal.income*((builder.lvl)**builse.input!.crystal.koef))) * global_koef * koef_crystal
+    const research_income = ((builse.input!.research.income*((builder.lvl)**builse.input!.research.koef))*(Number(datenow)-Number(dateold))/builse.input!.research.time) * global_koef
+    let succeser = false
+    await prisma.$transaction([
+        prisma.builder.update({ where: { id: storage.id }, data: { storage: JSON.stringify(storage_base) } }),
+        prisma.user.update({ where: { id: user.id }, data: { energy: { decrement: energy_outcome }, crystal: { increment: crystal_income }, research: { increment: research_income } } }),
+        prisma.builder.update({ where: { id: builder.id }, data: { update: new Date(datenow) } }),
+    ]).then(([]) => {
+        console.log(`Успешная работа ${builder.name}-${builder.id}`)
+        succeser = true
+    })
+    .catch((error) => {
+        console.error(`Ошибка работы ${builder.name}-${builder.id}: ${error.message}`);
+    });
+    if (succeser) {
+        await Update_Statistics(user, [{ name: 'crystal', value: crystal_income }, { name: 'research', value: research_income }])
     }
     return `${event_logger}`
 }

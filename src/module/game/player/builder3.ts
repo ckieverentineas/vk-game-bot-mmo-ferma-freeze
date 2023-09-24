@@ -4,6 +4,7 @@ import { Context, KeyboardBuilder } from "vk-io"
 import { Printer_Builder_Config, builder_config, builder_config_list } from "../datacenter/builder_config"
 import { vk } from "../../../index"
 import { icotransl_list } from "../datacenter/resources_translator"
+import { Time_Controller } from "./service3"
 
 export async function Builder_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
@@ -12,6 +13,7 @@ export async function Builder_Control(context: Context, user: User) {
     let event_logger = `❄ Отдел управления сооружениями на планете ${id_planet}:\n\n`
     const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { name: "asc" } })
     const builder = builder_list[id_builder_sent]
+    const services_ans = await Time_Controller(context, user, id_planet)
     if (builder_list.length > 0) {
         //const sel = buildin[0]
         keyboard.callbackButton({ label: `🔧 Улучшить`, payload: { command: 'builder_controller', command_sub: 'builder_upgrade', id_builder_sent: id_builder_sent, target: builder.id, id_planet: id_planet  }, color: 'secondary' }).row()
@@ -22,6 +24,7 @@ export async function Builder_Control(context: Context, user: User) {
         /*
         const services_ans = await Builder_Lifer(user, builder, id_planet)*/
         const plancant = await prisma.planet.findFirst({ where: { id: id_planet }, select: { build: true } })
+        event_logger += `\n${services_ans}`
         event_logger +=`\n\n${builder_list.length > 1 ? `~~~~ ${1+id_builder_sent} из ${builder_list.length} (макс ${plancant?.build}) ~~~~` : ''}`;
         
     } else {

@@ -208,13 +208,13 @@ export const builder_config: Builder_Config_Init = {
             metal: { name: "metal", price: 75, koef: 1.3 }
         },
         input: {
-            metal: { name: "metal", income: 5, koef: 1.5, time: 3600000 },
-            gold: { name: "gold", income: 5, koef: 1.5, time: 3600000 },
-            energy: { name: "energy", income: 5, koef: 1.5, time: 3600000 },
+            metal: { name: "metal", income: 5, koef: 1.9, time: 3600000 },
+            gold: { name: "gold", income: 5, koef: 2.2, time: 3600000 },
+            energy: { name: "energy", income: 5, koef: 2.3, time: 3600000 },
             builder_block: { name: "builder_block", income: 1, koef: 0, time: 3600000 },
         },
         output: {
-            artefact: { name: 'artefact', outcome: 1, koef: 0, time: 3600000 },
+            artefact: { name: 'artefact', outcome: 1, koef: 1.5, time: 3600000 },
             energy: { name: 'energy', outcome: 1, koef: 2, time: 3600000 },
         },
         require: {
@@ -230,7 +230,7 @@ export const builder_config: Builder_Config_Init = {
             metal: { name: "metal", price: 500, koef: 1.2 }
         },
         input: {
-            research: { name: "research", income: 1, koef: 0.1, time: 3600000 },
+            research: { name: "research", income: 0.01, koef: 0.01, time: 3600000 },
             crystal: { name: "crystal", income: 1, koef: 0.1, time: 3600000 },
         },
         output: {

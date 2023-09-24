@@ -3,7 +3,7 @@ import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
 import { Randomizer_Float } from "../service";
-//import { Time_Controller } from "../player/service";
+import { Time_Controller } from "../player/service3";
 import { icotransl_list } from "../datacenter/resources_translator";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
@@ -18,7 +18,7 @@ export async function Planet_Control(context: Context, user: User) {
     let cur = context.eventPayload.current_object ?? 0
     if (planet_list.length > 0) {
         const planet = planet_list[cur]
-        //const services_ans = await Time_Controller(context, user, planet.id)
+        const services_ans = await Time_Controller(context, user, planet.id)
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
@@ -42,7 +42,7 @@ export async function Planet_Control(context: Context, user: User) {
             }
         }*/
         event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal_dirt'].smile} ${icotransl_list['crystal_dirt'].name}: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_counter}\n👥 На работе: ${count_worker_be}/${count_worker_req}\n`;
-        //event_logger += `\nОтчеты: ${services_ans}\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`
+        event_logger += `\n${services_ans}\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`
     }
