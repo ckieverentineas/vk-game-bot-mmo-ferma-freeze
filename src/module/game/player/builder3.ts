@@ -289,13 +289,13 @@ async function Builder_Destroy(context: Context, user: User, target: number) {
     let id_planet = context.eventPayload.id_planet ?? 0
     let id_builder_sent = context.eventPayload.id_builder_sent ?? 0
     if (builder) {
+        const builder_ans = await Builder_Checker_Upgrade(user, builder.id, builder.lvl)
         if (context.eventPayload.status == "ok") {
-            const builder_ans = await Builder_Checker_Upgrade(user, builder.id, builder.lvl)
             await prisma.$transaction([
                 prisma.builder.delete({ where: { id: builder.id } }),
                 prisma.user.update({ where: { id: user.id }, data: { gold: { increment: builder_ans?.gold } } })
             ]).then(([builder_del, user_return]) => {
-                event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 Вам возвращено 50%, теперь на балансе ${user_return.gold.toFixed(2)}💰` 
+                event_logger = `⌛ Поздравляем с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 Вам возвращено ${builder_ans?.gold} шекелей, теперь на балансе ${user_return.gold.toFixed(2)}💰` 
                 console.log(`⌛ Поздравляем ${user.idvk} с разрушением здания ${builder_del.name}-${builder_del.id}.\n💳 Вам возвращено 50%, теперь на балансе ${user_return.gold.toFixed(2)}💰`);
             })
             .catch((error) => {
@@ -303,7 +303,7 @@ async function Builder_Destroy(context: Context, user: User, target: number) {
                 console.error(`Ошибка: ${error.message}`);
             });
         } else {
-            event_logger = `Вы уверены, что хотите снести ${builder.name}-${builder.id} вам вернется не более 50% стоимости шекелей?`
+            event_logger = `Вы уверены, что хотите снести ${builder.name}-${builder.id} вам вернется ${builder_ans?.gold} шекелей?`
             keyboard.callbackButton({ label: 'Хочу', payload: { command: 'builder_controller', command_sub: 'builder_destroy', id_builder_sent: id_builder_sent, office_current: 0, target: builder.id, status: "ok", id_planet: id_planet }, color: 'secondary' })
         } 
     }

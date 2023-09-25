@@ -75,14 +75,14 @@ async function Mine_Controller(user: User, builder: Builder, id_planet: number) 
     const crystal_dirt_income_will = ((builse.input!.crystal_dirt.income*((builder.lvl)**builse.input!.crystal_dirt.koef))*(Number(datenow)-Number(dateold))/builse.input!.crystal_dirt.time) * global_koef
     const uranium_income_will = ((builse.input!.uranium.income*((builder.lvl)**builse.input!.uranium.koef))*(Number(datenow)-Number(dateold))/builse.input!.uranium.time) * global_koef
     // проверяем, остались ли ресурсы на планете и есть ли место на складе
-    const coal_profit = storage_base.coal.count+coal_income_will  <= (storage_base.coal.limit*((builder.lvl)**storage_base.coal.koef_limit)) && planet.coal  >= coal_income_will ? coal_income_will : 0
-    const golden_profit = storage_base.golden.count+golden_income_will  <= (storage_base.golden.limit*((builder.lvl)**storage_base.golden.koef_limit)) && planet.golden  >= golden_income_will ? golden_income_will : 0
-    const iron_profit = storage_base.iron.count+iron_income_will  <= (storage_base.iron.limit*((builder.lvl)**storage_base.iron.koef_limit)) && planet.iron  >= iron_income_will ? iron_income_will : 0
-    const gas_profit = storage_base.gas.count+gas_income_will  <= (storage_base.gas.limit*((builder.lvl)**storage_base.gas.koef_limit)) && planet.gas  >= gas_income_will ? gas_income_will : 0
-    const oil_profit = storage_base.oil.count+oil_income_will  <= (storage_base.oil.limit*((builder.lvl)**storage_base.oil.koef_limit)) && planet.oil  >= oil_income_will ? oil_income_will : 0
-    const artefact_profit = storage_base.artefact.count+artefact_income_will  <= (storage_base.artefact.limit*((builder.lvl)**storage_base.artefact.koef_limit)) && planet.artefact  >= artefact_income_will ? artefact_income_will : 0
-    const crystal_dirt_profit = storage_base.crystal_dirt.count+crystal_dirt_income_will  <= (storage_base.crystal_dirt.limit*((builder.lvl)**storage_base.crystal_dirt.koef_limit)) && planet.crystal  >= crystal_dirt_income_will ? crystal_dirt_income_will : 0
-    const uranium_profit = storage_base.uranium.count+uranium_income_will  <= (storage_base.uranium.limit*((builder.lvl)**storage_base.uranium.koef_limit)) && planet.uranium  >= uranium_income_will ? uranium_income_will : 0
+    const coal_profit = storage_base.coal.count+coal_income_will  <= (storage_base.coal.limit*((storage.lvl)**storage_base.coal.koef_limit)) && planet.coal  >= coal_income_will ? coal_income_will : 0
+    const golden_profit = storage_base.golden.count+golden_income_will  <= (storage_base.golden.limit*((storage.lvl)**storage_base.golden.koef_limit)) && planet.golden  >= golden_income_will ? golden_income_will : 0
+    const iron_profit = storage_base.iron.count+iron_income_will  <= (storage_base.iron.limit*((storage.lvl)**storage_base.iron.koef_limit)) && planet.iron  >= iron_income_will ? iron_income_will : 0
+    const gas_profit = storage_base.gas.count+gas_income_will  <= (storage_base.gas.limit*((storage.lvl)**storage_base.gas.koef_limit)) && planet.gas  >= gas_income_will ? gas_income_will : 0
+    const oil_profit = storage_base.oil.count+oil_income_will  <= (storage_base.oil.limit*((storage.lvl)**storage_base.oil.koef_limit)) && planet.oil  >= oil_income_will ? oil_income_will : 0
+    const artefact_profit = storage_base.artefact.count+artefact_income_will  <= (storage_base.artefact.limit*((storage.lvl)**storage_base.artefact.koef_limit)) && planet.artefact  >= artefact_income_will ? artefact_income_will : 0
+    const crystal_dirt_profit = storage_base.crystal_dirt.count+crystal_dirt_income_will  <= (storage_base.crystal_dirt.limit*((storage.lvl)**storage_base.crystal_dirt.koef_limit)) && planet.crystal  >= crystal_dirt_income_will ? crystal_dirt_income_will : 0
+    const uranium_profit = storage_base.uranium.count+uranium_income_will  <= (storage_base.uranium.limit*((storage.lvl)**storage_base.uranium.koef_limit)) && planet.uranium  >= uranium_income_will ? uranium_income_will : 0
     // добавляем добытые ресурсы на склад планеты
     storage_base.coal.count += coal_profit
     storage_base.golden.count += golden_profit
@@ -338,7 +338,7 @@ async function City_Controller(user: User, builder: Builder, id_planet: number) 
         // эвакуация рабочих с потерянных планет
         for (const worker of await prisma.worker.findMany({ where: { id_user: user.id } })) {
             if (worker.id_planet != id_planet ) {
-                const worker_planet_check = await prisma.planet.findFirst({ where: { id: worker.id_planet || 0 } })
+                const worker_planet_check = await prisma.planet.findFirst({ where: { id: worker.id_planet || -1 } })
                 if (!worker_planet_check && worker_limiter > 0) {
                     await prisma.$transaction([
                         prisma.worker.update({ where: { id: worker.id }, data: { id_planet: id_planet, update: datenow, id_builder: 0 } }),
@@ -352,11 +352,12 @@ async function City_Controller(user: User, builder: Builder, id_planet: number) 
             }
         }
         // докупка рабочих
-        if (worker_limiter > 0) {
+        while (worker_limiter > 0) {
             await prisma.$transaction([
                 prisma.worker.create({ data: { id_user: user.id, name: await Generator_Nickname(), id_planet: id_planet } }),
             ]).then(([worker_new]) => {
                 console.log(`Города успешно наняли недостающего рабочего ${worker_new.name}-${worker_new.id} на ${planet.name}-${planet.id}`)
+                worker_limiter--
             }).catch((error) => {
                 console.error(`Ошибка: ${error.message}`);
             });

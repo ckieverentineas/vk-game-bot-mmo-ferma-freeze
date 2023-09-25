@@ -1,4 +1,4 @@
-import { User, Planet, System } from "@prisma/client"
+import { User, Planet, System, Builder } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
@@ -23,7 +23,7 @@ export async function Planet_Control(context: Context, user: User) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
-		.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' })
+		//.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' })
         keyboard.callbackButton({ label: `♻`, payload: { command: 'planet_control', current_object: cur }, color: 'secondary' }).row()
         // считаем количество рабочих, которых можно поселить на этой планете
         const cities = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: planet.id, name: "Города" } })
@@ -42,7 +42,7 @@ export async function Planet_Control(context: Context, user: User) {
             worker_need += Math.floor(builder_config[builderplan.name].require!.worker.limit*((builderplan.lvl)**builder_config[builderplan.name].require!.worker.koef))
             worker_be += await prisma.worker.count({ where: { id_builder: builderplan.id, id_user: user.id, id_planet: planet.id } })
         }
-        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal_dirt'].smile} ${icotransl_list['crystal_dirt'].name}: ${planet.crystal.toFixed(2)}\n🏠 Население: ${worker_life}/${worker_life_can}\n👥 На работе: ${worker_be}/${worker_need}\n`;
+        event_logger +=`💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n${icotransl_list['artefact'].smile} Артефактов: ${planet.artefact.toFixed(2)}\n${icotransl_list['golden'].smile} Золото: ${planet.golden.toFixed(2)}\n${icotransl_list['iron'].smile} Железная руда: ${planet.iron.toFixed(2)}\n${icotransl_list['coal'].smile} Уголь: ${planet.coal.toFixed(2)}\n${icotransl_list['crystal_dirt'].smile} ${icotransl_list['crystal_dirt'].name}: ${planet.crystal.toFixed(2)}\n${icotransl_list['gas'].smile} ${icotransl_list['gas'].name}: ${planet.gas.toFixed(2)}\n${icotransl_list['oil'].smile} ${icotransl_list['oil'].name}: ${planet.oil.toFixed(2)}\n${icotransl_list['uranium'].smile} ${icotransl_list['uranium'].name}: ${planet.uranium.toFixed(2)}\n🏠 Население: ${worker_life}/${worker_life_can}\n👥 На работе: ${worker_be}/${worker_need}\n`;
         event_logger += `\n${services_ans}\n${planet_list.length > 1 ? `~~~~ ${1+cur} из ${planet_list.length} ~~~~` : ''}`
     } else {
         event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`

@@ -1,26 +1,29 @@
-import { Corporation, User } from "@prisma/client";
+import { Builder, Corporation, User } from "@prisma/client";
 import { vk } from "../../../";
 import { Context, KeyboardBuilder } from "vk-io";
 import prisma from "../../prisma";
 import { icotransl_list } from "../datacenter/resources_translator";
+import { builder_config } from "../datacenter/builder_config";
 
 async function User_Info(user: User) {
 	const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
-	let count_worker_req = 0
-	let count_worker_be = 0
-	/*for (const builder of await prisma.builder.findMany({ where: { id_user: user.id } })) {
-		const requires: Require[] = JSON.parse(builder.require)
-		for (const require of requires) {
-			if (require.name == 'worker') {
-				const worker_check = await prisma.worker.count({ where: { id_builder: builder.id } })
-				if (worker_check) {
-					count_worker_req += Math.floor(require.limit)
-					count_worker_be += worker_check
-				}
-			}
-		}
-	}*/
-    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['metal'].smile} ${icotransl_list['metal'].name}: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n👥 Население (есть/надо): ${count_worker_be}/${count_worker_req}\n`
+	const cities = await prisma.builder.findMany({ where: { id_user: user.id, name: "Города" } })
+	let worker_life_can = 0
+    for (const city of cities) {
+        worker_life_can += Math.floor(builder_config[city.name].storage!.worker.limit*((city.lvl)**builder_config[city.name].storage!.worker.koef_limit))
+        
+    }
+    // cчитаем количество рабочих, что живут на этой планете
+    const worker_life = await prisma.worker.count({ where: { id_user: user.id } })
+    // считаем количество рабочих, что требуется для работы на этой планете 
+    let worker_need = 0
+    let worker_be = 0
+    const builder_on_planet: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id } })
+    for (const builderplan of builder_on_planet) {
+        worker_need += Math.floor(builder_config[builderplan.name].require!.worker.limit*((builderplan.lvl)**builder_config[builderplan.name].require!.worker.koef))
+        worker_be += await prisma.worker.count({ where: { id_builder: builderplan.id, id_user: user.id } })
+    }
+    let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['metal'].smile} ${icotransl_list['metal'].name}: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n\n🏠 Население: ${worker_life}/${worker_life_can}\n👥 На работе: ${worker_be}/${worker_need}\n`
 	const keyboard = new KeyboardBuilder()
 	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control' }, color: 'secondary' }).row()
 	.callbackButton({ label: '🌐 Корпорация', payload: { command: 'main_menu_corporation' }, color: 'secondary' }).row()
