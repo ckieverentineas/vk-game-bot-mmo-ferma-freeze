@@ -278,7 +278,7 @@ async function Factory_Controller(user: User, builder: Builder, id_planet: numbe
     }
     // просчитываем потребление за прошедшее время
     const iron_outcome_will = ((builse.output!.iron.outcome*((builder.lvl)**builse.output!.iron.koef))*(Number(datenow)-Number(dateold))/builse.output!.iron.time) * global_koef
-    const iron_outcome = storage_base.golden.count-iron_outcome_will > 0 ? iron_outcome_will : 0
+    const iron_outcome = storage_base.iron.count-iron_outcome_will > 0 ? iron_outcome_will : 0
     storage_base.iron.count -= iron_outcome
     const energy_outcome = ((builse.output!.energy.outcome*((builder.lvl)**builse.output!.energy.koef))*(Number(datenow)-Number(dateold))/builse.output!.energy.time) * global_koef
     // просчитываем прибыль за прошедшее время
@@ -445,7 +445,7 @@ async function Archaeological_Center_Controller(user: User, builder: Builder, id
             metal_art += await Randomizer_Float(0, ((builse.input!.metal.income*((builder.lvl)**builse.input!.metal.koef))) * global_koef)
             gold_art += await Randomizer_Float(0, ((builse.input!.gold.income*((builder.lvl)**builse.input!.gold.koef))) * global_koef)
             energy_art += await Randomizer_Float(0, ((builse.input!.energy.income*((builder.lvl)**builse.input!.energy.koef))) * global_koef)
-            build_art += await Randomizer_Float(0, 1000) > 900 ? ((builse.input!.artefact.income*((builder.lvl)**builse.input!.artefact.koef))) : 0
+            build_art += await Randomizer_Float(0, 1000) > 900 ? ((builse.input!.builder_block.income*((builder.lvl)**builse.input!.builder_block.koef))) : 0
         }
     }
     let succeser = false
