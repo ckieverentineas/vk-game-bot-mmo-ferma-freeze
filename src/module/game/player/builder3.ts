@@ -11,7 +11,16 @@ export async function Builder_Control(context: Context, user: User) {
     let id_builder_sent = context.eventPayload.id_builder_sent ?? 0
     let id_planet = context.eventPayload.id_planet ?? 0
     let event_logger = `❄ Отдел управления сооружениями на планете ${id_planet}:\n\n`
-    const builder_list: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { name: "asc" } })
+    const builder_list_get: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { crdate: "asc" } })
+    const builder_list: Builder[] = []
+    for (const buil of builder_list_get) {
+        const research: Research | null | { lvl: number } = await prisma.research.findFirst({ where: { id_user: user.id, name: buil.name } }) ?? { lvl: 10 }
+        if (research.lvl > buil.lvl) {
+            builder_list.unshift(buil)
+        } else {
+            builder_list.push(buil)
+        }
+    }
     const builder = builder_list[id_builder_sent]
     const services_ans = await Time_Controller(context, user, id_planet)
     if (builder_list.length > 0) {
@@ -79,6 +88,7 @@ async function Builder_Checker_Build(user: User, id_planet: number, name_sel: st
         event_logger.message += ` ✅${builder_counter}/${builder_counter_all}/${planet.build}${icotransl_list['builder_block'].smile} `
     } else {
         event_logger.message += ` ⛔${builder_counter}/${builder_counter_all}/${planet.build}${icotransl_list['builder_block'].smile} `
+        event_logger.status = false
     }
     if (user.gold >= builder_sel.cost.gold.price) {
         event_logger.message += ` ✅${builder_sel.cost.gold.price.toFixed(2)}${icotransl_list[builder_sel.cost.gold.name].smile} `

@@ -46,8 +46,6 @@ model Planet {
   coal    Float
   gas     Float
   oil     Float
-  slate   Float
-  turf    Float
   uranium Float
 
   iron    Float

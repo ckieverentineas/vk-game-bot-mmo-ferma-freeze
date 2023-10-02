@@ -5,7 +5,7 @@ import prisma from "../../prisma";
 import { Randomizer_Float } from "../service";
 import { Time_Controller } from "../player/service3";
 import { icotransl_list } from "../datacenter/resources_translator";
-import { builder_config } from "../datacenter/builder_config";
+import { builder_config, builder_config_list } from "../datacenter/builder_config";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
     "Планета": { price: 100000, koef_price: 3, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" },
@@ -14,7 +14,16 @@ const buildin: { [key: string]: { price: number, koef_price: number, description
 
 export async function Planet_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
-    const planet_list: Planet[] = await prisma.planet.findMany({ where: { id_user: user.id } })
+    const planet_list_get: Planet[] = await prisma.planet.findMany({ where: { id_user: user.id }, orderBy: { crdate: "asc" } })
+    const planet_list: Planet[] = []
+    for (const plan of planet_list_get) {
+        const research: number = await prisma.builder.count({ where: { id_user: user.id, id_planet: plan.id } }) | 0
+        if (plan.build > research) {
+            planet_list.unshift(plan)
+        } else {
+            planet_list.push(plan)
+        }
+    }
     let event_logger = `❄ Отдел управления планетами:\n\n`
     let cur = context.eventPayload.current_object ?? 0
     if (planet_list.length > 0) {
@@ -23,8 +32,10 @@ export async function Planet_Control(context: Context, user: User) {
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
         keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
+        .callbackButton({ label: `📊 Застройка`, payload: { command: 'planet_controller', command_sub: 'planet_info', id_planet: planet.id, current_object: cur }, color: 'secondary' }).row()
 		//.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' })
-        keyboard.callbackButton({ label: `♻`, payload: { command: 'planet_control', current_object: cur }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: `♻`, payload: { command: 'planet_control', current_object: cur, id_planet: planet.id }, color: 'secondary' }).row()
+        
         // считаем количество рабочих, которых можно поселить на этой планете
         const cities = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: planet.id, name: "Города" } })
         let worker_life_can = 0
@@ -77,12 +88,26 @@ export async function Planet_Controller(context: Context, user: User) {
     const config: Object_Controller = {
         'planet_add': Planet_Add,
         'planet_destroy': Planet_Destroy,
+        'planet_info': Planet_Info
     }
     await config[context.eventPayload.command_sub](context, user, target)
 }
 
 type Object_Controller = {
     [key: string]: (context: Context, user: User, target?: number) => Promise<void>;
+}
+
+async function Planet_Info(context: Context, user: User, ) {
+    const keyboard = new KeyboardBuilder()
+    let cur = context.eventPayload.current_object ?? 0
+    let id_planet = context.eventPayload.id_planet ?? 0
+    let event_logger = `❄ Застройка Планеты-${id_planet}:\n\n`
+    for (const name of builder_config_list) {
+        const counter = await prisma.builder.count({ where: { id_planet: id_planet, id_user: user.id, name: name } })
+        event_logger += `💬 ${name}: ${counter}\n`
+    }
+    keyboard.callbackButton({ label: `❌`, payload: { command: 'planet_control', current_object: cur }, color: 'secondary' }).row().inline().oneTime()
+    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 async function Planet_Usual(user: User, target: string) {
     const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } })
@@ -97,8 +122,6 @@ async function Planet_Usual(user: User, target: string) {
 				coal: await Randomizer_Float(1000000, 1000000*2), 
 				gas: await Randomizer_Float(50000, 50000*2), 
 				oil: await Randomizer_Float(25000, 25000*2), 
-				slate: await Randomizer_Float(10000, 10000*2),
-				turf: await Randomizer_Float(5000, 5000*2), 
 				uranium: await Randomizer_Float(1000, 1000*2),
 				iron: await Randomizer_Float(1000000, 1000000*2),
 				golden: await Randomizer_Float(1000000, 1000000*2),
@@ -135,8 +158,6 @@ async function Planet_Mega(user: User, target: string) {
 				coal: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax), 
 				gas: await Randomizer_Float(50000*mulmin, 50000*mulmin*mulmax), 
 				oil: await Randomizer_Float(25000*mulmin, 25000*mulmin*mulmax), 
-				slate: await Randomizer_Float(10000, 10000*mulmax),
-				turf: await Randomizer_Float(5000, 5000*mulmax), 
 				uranium: await Randomizer_Float(1000*mulmin, 1000*mulmin*mulmax),
 				iron: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax),
 				golden: await Randomizer_Float(1000000*mulmin, 1000000*mulmin*mulmax),
