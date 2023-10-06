@@ -524,7 +524,7 @@ async function Archaeological_Center_Controller(user: User, builder: Builder, id
         console.error(`Ошибка работы ${builder.name}-${builder.id}: ${error.message}`);
     });
     if (succeser) {
-        await Update_Statistics(user, [{ name: 'iron', value: metal_art }, { name: 'gold', value: gold_art }, { name: 'energy', value: energy_art }])
+        await Update_Statistics(user, [{ name: 'iron', value: metal_art }, { name: 'gold', value: gold_art }, { name: 'energy', value: energy_art }, { name: 'artefact', value: artefact_outcome}, { name: 'build', value: build_art }])
     }
     return { message: event_logger, analitica: analitica }
 }

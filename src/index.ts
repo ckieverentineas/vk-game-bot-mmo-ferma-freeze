@@ -17,6 +17,7 @@ import { Planet_Control, Planet_Controller } from "./module/game/account/planet"
 import { Send_Message, Sleep } from "./module/fab/helper";
 import { Research_Control, Research_Controller } from "./module/game/player/research";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
+import { Randomizer_Float } from "module/game/service";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -107,6 +108,23 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 	}
 	return await next();
 })*/
+
+vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
+	//проверяем есть ли пользователь в базах данных
+	console.log(context)
+	const post_check = await prisma.boss.findFirst({ where: { id_post: context.postId }})
+	const user_check = await prisma.user.findFirst({ where: { idvk: context.fromId } })
+	if (user_check && post_check) {
+		if (post_check.hp > 0) {
+			const dmg = await Randomizer_Float(1, 10)
+			const artefact_drop = await Randomizer_Float(0, 10) > dmg && post_check.artefact >= dmg ? dmg : 0
+			const boss = await prisma.boss.update({ where: { id: post_check.id }, data: { hp: { decremet: dmg }, artefact: artefact_drop } })
+			await vk.api.wall.edit({ post_id: context.postId, message: `Босс: ${boss.name}\n Осталось здоровья: ${boss.hp}\n Дроп: ${boss.artefact} ${boss.crystal}\n Описание: ${boss.description}` })
+		}
+	}
+	return await next();
+})
+
 vk.updates.on('wall_post_new', async (context: Context, next: any) => { 
 	if (Math.abs(context.wall.authorId) == group_id && context.wall.createdUserId == root[0]) {
 		for (const user of await prisma.user.findMany({ where: { status: { not: "banned" } } }) ) {
