@@ -9,6 +9,7 @@ import { Send_Message } from "./module/fab/helper";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
 import { Resources } from "module/game/player/statistics";
 import { builder_config } from "./module/game/datacenter/builder_config";
+import { Randomizer_Float } from "./module/game/service";
 
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
@@ -643,6 +644,11 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         if (context.isOutbox == false && root.includes(String(context.senderId)) && context.text) {
             console.log(context)
             const test = await vk_user.api.wall.post({ owner_id: -group_id, from_group: true, message: "test boss"})
+            await prisma.boss.create({ data: { 
+                id_post: test.post_id, name: "Грета Тунберг", 
+                description: `Грета Тунберг - шведская экологическая активистка, получившая международную известность и признание за продвижение мнения о неизбежном экзистенциальном кризисе для человечества в результате изменения климата.\nИзвестна прямолинейной манерой общения и резкой критикой политических деятелей за их неспособность, по её мнению, предпринять достаточные действия для решения экологических проблем.\nВ августе 2018 года, когда ей было 15 лет, Тунберг начала протестовать возле шведского парламента с плакатом «Школьная забастовка за климат», призывая к незамедлительным действиям по борьбе с экологическими проблемами. Её действия нашли отклик по всему миру, породив массовые мероприятия, известные как «Пятницы ради будущего».`, 
+                hp: await Randomizer_Float(500, 1000), artefact: await Randomizer_Float(250, 500), crystal: await Randomizer_Float(25, 100) 
+            }})
             await context.send('Босс публикейшен')
             console.log(test)
         }

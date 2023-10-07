@@ -17,7 +17,7 @@ import { Planet_Control, Planet_Controller } from "./module/game/account/planet"
 import { Send_Message, Sleep } from "./module/fab/helper";
 import { Research_Control, Research_Controller } from "./module/game/player/research";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
-import { Randomizer_Float } from "module/game/service";
+import { Randomizer_Float } from "./module/game/service";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -112,14 +112,72 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
 	//проверяем есть ли пользователь в базах данных
 	console.log(context)
-	const post_check = await prisma.boss.findFirst({ where: { id_post: context.postId }})
+	const post_check = await prisma.boss.findFirst({ where: { id_post: context.objectId }})
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.fromId } })
 	if (user_check && post_check) {
 		if (post_check.hp > 0) {
 			const dmg = await Randomizer_Float(1, 10)
 			const artefact_drop = await Randomizer_Float(0, 10) > dmg && post_check.artefact >= dmg ? dmg : 0
-			const boss = await prisma.boss.update({ where: { id: post_check.id }, data: { hp: { decremet: dmg }, artefact: artefact_drop } })
-			await vk.api.wall.edit({ post_id: context.postId, message: `Босс: ${boss.name}\n Осталось здоровья: ${boss.hp}\n Дроп: ${boss.artefact} ${boss.crystal}\n Описание: ${boss.description}` })
+			const stata: { idvk: number, update: Date, atk: number }[] = JSON.parse(post_check.stat)
+			const datenow: Date = new Date()
+			let trigself = false
+			for (let i = 0; i < stata.length; i++) {
+				if (stata[i].idvk == user_check.idvk) {
+					trigself = true
+					const dateold: Date = new Date(stata[i].update)
+					if ((Number(datenow)-Number(dateold)) > 5000) {
+						stata[i].atk += dmg
+						stata[i].update = datenow
+					} else {
+						await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔕 Подождите до следующего действия еще ${((5000-(Number(datenow)-Number(dateold)))/1000).toFixed(2)} секунд`})
+						return await next();
+					}
+				}
+			}
+			if (!trigself) { stata.push({ idvk: user_check.idvk, update: datenow, atk: dmg })}
+			stata.sort(function(a, b){
+                return b.atk - a.atk;
+            });
+			let counter_last = 1
+            let trig_find_me = false
+			let messa = ''
+            for (const stat_sel of stata) {
+                if (counter_last <= 10) {
+                    messa += `${stat_sel.idvk == user_check.idvk ? '✅' : '👤'} ${counter_last}) ${stat_sel.atk.toFixed(2)}💥 <-- [https://vk.com/id${stat_sel.idvk}|Повелитель${counter_last}]`
+                    if (stat_sel.idvk == user_check.idvk) { trig_find_me = true }
+                }
+                if (counter_last > 10 && !trig_find_me) {
+                    if (stat_sel.idvk == user_check.idvk) {
+                        messa += `\n\n${stat_sel.idvk == user_check.idvk ? '✅' : '👤'} ${counter_last}) ${stat_sel.atk.toFixed(2)}💥 <-- [https://vk.com/id${stat_sel.idvk}|Повелитель${counter_last}]`
+                    }
+                }
+                counter_last++
+            }
+            messa += `\n\n☠ В статистие участвует ${counter_last-1} игроков`
+			const boss = await prisma.boss.update({ where: { id: post_check.id }, data: { hp: { decrement: dmg }, artefact: { decrement: artefact_drop }, stat: JSON.stringify(stata) } })
+			await prisma.planet.updateMany({ where: { id_user: user_check.id }, data: { artefact: { increment: artefact_drop } } })
+			await vk_user.api.wall.edit({ owner_id: -group_id, post_id: post_check.id_post, message: `☠ Босс: ${boss.name}\n❤ Здоровье: ${boss.hp.toFixed(2)}\n🏆 Дроп: ${boss.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${boss.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n💬 Описание: ${boss.description}\n\n📊 Статистика:\n${messa}` })
+			await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔔 Вы нанесли ${dmg.toFixed(2)}💥 урона боссу, у него осталось ${boss.hp.toFixed(2)}❤. ${artefact_drop > 0 ? `Выпало ${artefact_drop}${icotransl_list['artefact'].smile}` : ''}`})
+		} else {
+			if (!post_check.defeat) {
+				let reward_price = 0
+				const stata: { idvk: number, update: Date, atk: number }[] = JSON.parse(post_check.stat)
+				stata.sort(function(a, b){
+					return b.atk - a.atk;
+				});
+				for (const stat of stata) {
+					reward_price += stat.atk
+				}
+				const reward_koef = reward_price/post_check.crystal
+				let rang = 1
+				for (const stat of stata) {
+					const user_get = await prisma.user.findFirst({ where: { idvk: stat.idvk } })
+					const user_up = await prisma.user.update({ where: { id: user_get!.id}, data: { crystal: { increment: Math.floor(stat.atk/reward_koef)}}})
+					await Send_Message(stat.idvk, `За победу над ${post_check.name} вы получаете ${Math.floor(stat.atk/reward_koef)}${icotransl_list['crystal']} заняв ${rang} место из ${stata.length}. Баланс: ${user_get?.crystal} --> ${user_up.crystal}`)
+					rang++
+				}
+				await prisma.boss.update({ where: { id: post_check.id }, data: { defeat: true } })
+			}
 		}
 	}
 	return await next();

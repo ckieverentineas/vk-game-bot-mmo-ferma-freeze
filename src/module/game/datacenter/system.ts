@@ -1,1 +1,1 @@
-export const version_soft = 0.81
+export const version_soft = 0.83
