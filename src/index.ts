@@ -125,11 +125,11 @@ vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
 				if (stata[i].idvk == user_check.idvk) {
 					trigself = true
 					const dateold: Date = new Date(stata[i].update)
-					if ((Number(datenow)-Number(dateold)) > 5000) {
+					if ((Number(datenow)-Number(dateold)) > 10000) {
 						stata[i].atk += dmg
 						stata[i].update = datenow
 					} else {
-						await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔕 Подождите до следующего действия еще ${((5000-(Number(datenow)-Number(dateold)))/1000).toFixed(2)} секунд`})
+						await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔕 Подождите до следующего действия еще ${((10000-(Number(datenow)-Number(dateold)))/1000).toFixed(2)} секунд`})
 						return await next();
 					}
 				}
@@ -143,7 +143,7 @@ vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
 			let messa = ''
             for (const stat_sel of stata) {
                 if (counter_last <= 10) {
-                    messa += `${stat_sel.idvk == user_check.idvk ? '✅' : '👤'} ${counter_last}) ${stat_sel.atk.toFixed(2)}💥 <-- [https://vk.com/id${stat_sel.idvk}|Повелитель${counter_last}]`
+                    messa += `\n${stat_sel.idvk == user_check.idvk ? '✅' : '👤'} ${counter_last}) ${stat_sel.atk.toFixed(2)}💥 <-- [https://vk.com/id${stat_sel.idvk}|Повелитель${counter_last}]`
                     if (stat_sel.idvk == user_check.idvk) { trig_find_me = true }
                 }
                 if (counter_last > 10 && !trig_find_me) {
@@ -156,8 +156,11 @@ vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
             messa += `\n\n☠ В статистие участвует ${counter_last-1} игроков`
 			const boss = await prisma.boss.update({ where: { id: post_check.id }, data: { hp: { decrement: dmg }, artefact: { decrement: artefact_drop }, stat: JSON.stringify(stata) } })
 			await prisma.planet.updateMany({ where: { id_user: user_check.id }, data: { artefact: { increment: artefact_drop } } })
-			await vk_user.api.wall.edit({ owner_id: -group_id, post_id: post_check.id_post, message: `☠ Босс: ${boss.name}\n❤ Здоровье: ${boss.hp.toFixed(2)}\n🏆 Дроп: ${boss.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${boss.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n💬 Описание: ${boss.description}\n\n📊 Статистика:\n${messa}` })
 			await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔔 Вы нанесли ${dmg.toFixed(2)}💥 урона боссу, у него осталось ${boss.hp.toFixed(2)}❤. ${artefact_drop > 0 ? `Выпало ${artefact_drop}${icotransl_list['artefact'].smile}` : ''}`})
+			if ((Number(datenow)-Number(post_check.update)) > 1000000) {
+				await vk_user.api.wall.edit({ owner_id: -group_id, post_id: post_check.id_post, message: `☠ Босс: ${boss.name}\n❤ Здоровье: ${boss.hp.toFixed(2)}\n🏆 Дроп: ${boss.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${boss.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n💬 Описание: ${boss.description}\n\n📊 Статистика:\n${messa}` })
+				await prisma.boss.update({ where: { id: post_check.id }, data: { update: new Date(datenow) } })
+			}
 		} else {
 			if (!post_check.defeat) {
 				let reward_price = 0
@@ -176,6 +179,7 @@ vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
 					await Send_Message(stat.idvk, `За победу над ${post_check.name} вы получаете ${Math.floor(stat.atk/reward_koef)}${icotransl_list['crystal']} заняв ${rang} место из ${stata.length}. Баланс: ${user_get?.crystal} --> ${user_up.crystal}`)
 					rang++
 				}
+				await vk_user.api.wall.edit({ owner_id: -group_id, post_id: post_check.id_post, message: `☠ Босс: ${post_check.name}\n❤ Здоровье: ${post_check.hp.toFixed(2)}\n🏆 Дроп: ${post_check.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${post_check.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n💬 Описание: ${post_check.description}\n\n📊 Статистика: БОСС ПОВЕРЖЕН!` })
 				await prisma.boss.update({ where: { id: post_check.id }, data: { defeat: true } })
 			}
 		}

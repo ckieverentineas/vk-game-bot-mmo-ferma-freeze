@@ -181,4 +181,6 @@ model Boss {
   crystal Float
   stat String @default("[]")
   defeat Boolean @default(false)
+  crdate  DateTime @default(now())
+  update  DateTime @default(now())
 }
