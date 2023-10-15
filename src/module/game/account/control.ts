@@ -25,7 +25,7 @@ async function User_Info(user: User) {
     }
     let event_logger = `💬 Ваш бизнес, ${user.name}:\n💳 UID: ${user.id}\n🎥 Кремлевский номер: ${user.idvk}\n🌐 Корпорация: ${user.id_corporation == 0? 'Не в корпорации' : corp?.name}\n📈 Уровень: ${user.lvl}\n📗 Опыт: ${user.xp.toFixed(2)}\n💰 Шекели: ${user.gold.toFixed(2)}\n${icotransl_list['metal'].smile} ${icotransl_list['metal'].name}: ${user.iron.toFixed(2)}\n⚡ Энергия: ${user.energy.toFixed(2)}\n${icotransl_list['research'].smile} Очки исследования: ${user.research.toFixed(2)}\n💎 Караты: ${user.crystal}\n\n🏠 Население: ${worker_life}/${worker_life_can}\n👥 На работе: ${worker_be}/${worker_need}\n`
 	const keyboard = new KeyboardBuilder()
-	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control' }, color: 'secondary' }).row()
+	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control_multi' }, color: 'secondary' }).row()
 	.callbackButton({ label: '🌐 Корпорация', payload: { command: 'main_menu_corporation' }, color: 'secondary' }).row()
 	.callbackButton({ label: '🧪 Исследования', payload: { command: 'research_control' }, color: 'secondary' }).row()
 	.urlButton({ label: '🍻 Об игре', url: 'https://vk.com/@ferma_bot1-dobro-pozhalovat-v-mmo-ekonomicheskuu-biznes-strategiu' }).row()

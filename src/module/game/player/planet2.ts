@@ -2,7 +2,7 @@ import { User, Planet, System, Builder } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
-import { Randomizer_Float } from "../service";
+import { Fixed_Number_To_Five, Randomizer_Float } from "../service";
 import { Time_Controller } from "../player/service3";
 import { icotransl_list } from "../datacenter/resources_translator";
 import { builder_config, builder_config_list } from "../datacenter/builder_config";
@@ -10,6 +10,68 @@ import { builder_config, builder_config_list } from "../datacenter/builder_confi
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
     "Планета": { price: 100000, koef_price: 3, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" },
     "Планета Мега": { price: 10, koef_price: 1, description: "Планета Мега - огромные планеты в далеких уголках галактики, еще больше ископаемых, много площадок" }
+}
+
+export async function Planet_Control_Multi(context: Context, user: User) {
+    const keyboard = new KeyboardBuilder()
+    const planet_list_get: Planet[] = await prisma.planet.findMany({ where: { id_user: user.id }, orderBy: { crdate: "asc" } })
+    const planet_list: Planet[] = []
+    for (const plan of planet_list_get) {
+        const research: number = await prisma.builder.count({ where: { id_user: user.id, id_planet: plan.id } }) | 0
+        if (plan.build > research) {
+            planet_list.unshift(plan)
+        } else {
+            planet_list.push(plan)
+        }
+    }
+    let event_logger = `❄ Отдел управления планетами:\n\n`
+    let cur = await Fixed_Number_To_Five(context.eventPayload.current_object ?? 0)
+    if (planet_list.length > 0) {
+        const limiter = 5
+        let counter = 0
+        
+        for (let i=cur; i < planet_list.length && counter < limiter; i++) {
+            const planet = planet_list[i]
+            //const services_ans = await Time_Controller(context, user, planet.id)
+            const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
+            keyboard.callbackButton({ label: `👀 ${planet.name}-${planet.id}`, payload: { command: 'planet_control', id_planet: planet.id, current_object: i  }, color: 'secondary' }).row()
+            // считаем количество рабочих, которых можно поселить на этой планете
+            const cities = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: planet.id, name: "Города" } })
+            let worker_life_can = 0
+            for (const city of cities) {
+                worker_life_can += Math.floor(builder_config[city.name].storage!.worker.limit*((city.lvl)**builder_config[city.name].storage!.worker.koef_limit))
+            }
+            // cчитаем количество рабочих, что живут на этой планете
+            const worker_life = await prisma.worker.count({ where: { id_planet: planet.id, id_user: user.id } })
+            // считаем количество рабочих, что требуется для работы на этой планете 
+            let worker_need = 0
+            let worker_be = 0
+            const builder_on_planet: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: planet.id } })
+            for (const builderplan of builder_on_planet) {
+                worker_need += Math.floor(builder_config[builderplan.name].require!.worker.limit*((builderplan.lvl)**builder_config[builderplan.name].require!.worker.koef))
+                worker_be += await prisma.worker.count({ where: { id_builder: builderplan.id, id_user: user.id, id_planet: planet.id } })
+            }
+            event_logger +=`\n💬 Планета: ${planet.name}-${planet.id}\n⚒ Зданий: ${build_counter}/${planet.build}\n🏠 Население: ${worker_life}/${worker_life_can}\n👥 На работе: ${worker_be}/${worker_need}\n`;
+            //event_logger += `\n${services_ans}`
+            counter++
+        }
+        event_logger += `\n\n${planet_list.length > 1 ? `~~~~ ${planet_list.length > limiter ? cur+limiter : limiter-(planet_list.length-cur)} из ${planet_list.length} ~~~~` : ''}`
+        //предыдущий офис
+        if (planet_list.length > limiter && cur > limiter-1) {
+            keyboard.callbackButton({ label: '←', payload: { command: 'planet_control_multi', current_object: cur-limiter }, color: 'secondary' })
+        }
+        //следующий офис
+        if (planet_list.length > limiter && cur < planet_list.length-limiter) {
+            keyboard.callbackButton({ label: '→', payload: { command: 'planet_control_multi', current_object: cur+limiter }, color: 'secondary' })
+        }
+    } else {
+        event_logger = `💬 Вы еще не имеете планет, как насчет поиметь их??`
+    }
+    //новый обьект
+    keyboard.callbackButton({ label: `➕`, payload: { command: 'planet_controller', command_sub: 'planet_add', current_object: cur }, color: 'secondary' })
+    //назад хз куда
+    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
+    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Planet_Control(context: Context, user: User) {
@@ -30,7 +92,7 @@ export async function Planet_Control(context: Context, user: User) {
         const planet = planet_list[cur]
         const services_ans = await Time_Controller(context, user, planet.id)
 		const build_counter = await prisma.builder.count({ where: { id_planet: planet.id } })
-        keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control', id_planet: planet.id  }, color: 'secondary' }).row()
+        keyboard.callbackButton({ label: `🏛 Здания`, payload: { command: 'builder_control_multi', id_planet: planet.id }, color: 'secondary' }).row()
         .callbackButton({ label: `👥 Люди`, payload: { command: 'worker_control', id_object: planet.id }, color: 'secondary' }).row()
         .callbackButton({ label: `📊 Застройка`, payload: { command: 'planet_controller', command_sub: 'planet_info', id_planet: planet.id, current_object: cur }, color: 'secondary' }).row()
 		//.callbackButton({ label: '💥 Уничтожить', payload: { command: 'planet_controller', command_sub: 'planet_destroy', id_object: planet.id }, color: 'secondary' })
@@ -77,9 +139,9 @@ export async function Planet_Control(context: Context, user: User) {
         }
     }
     //новый обьект
-    keyboard.callbackButton({ label: `➕`, payload: { command: 'planet_controller', command_sub: 'planet_add' }, color: 'secondary' })
+    //keyboard.callbackButton({ label: `➕`, payload: { command: 'planet_controller', command_sub: 'planet_add' }, color: 'secondary' })
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control_multi', current_object: cur }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 

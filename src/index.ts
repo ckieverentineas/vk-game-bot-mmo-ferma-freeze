@@ -4,7 +4,7 @@ import QuestionManager, { IQuestionMessageContext } from "vk-io-question";
 import prisma from "./module/prisma";
 import { User_Register } from "./module/game/account/tutorial";
 import { Main_Menu, Main_Menu_Close, User_Menu_Show } from "./module/game/account/control";
-import { Builder_Control, Builder_Controller } from "./module/game/player/builder3";
+import { Builder_Control, Builder_Control_Multi, Builder_Controller } from "./module/game/player/builder3";
 import * as dotenv from 'dotenv';
 import { Worker_Control, Worker_Controller } from "./module/game/account/worker";
 import { registerUserRoutes } from "./player";
@@ -13,11 +13,11 @@ import { Corporation_Controller, Main_Menu_Corporation } from "./module/game/cor
 import { Builder_Control_Corporation, Builder_Controller_Corporation } from "./module/game/corporation/builder";
 import { Member_Control, Member_Controller } from "./module/game/corporation/member";
 import { Trigger } from "@prisma/client";
-import { Planet_Control, Planet_Controller } from "./module/game/account/planet";
 import { Send_Message, Sleep } from "./module/fab/helper";
 import { Research_Control, Research_Controller } from "./module/game/player/research";
 import { icotransl_list } from "./module/game/datacenter/resources_translator";
 import { Randomizer_Float } from "./module/game/service";
+import { Planet_Control_Multi, Planet_Control, Planet_Controller } from "./module/game/player/planet2";
 dotenv.config();
 
 export const token: string = process.env.token as string
@@ -111,7 +111,7 @@ vk.updates.on('wall_reply_delete', async (context: Context, next: any) => {
 
 vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
 	//проверяем есть ли пользователь в базах данных
-	console.log(context)
+	//console.log(context)
 	const post_check = await prisma.boss.findFirst({ where: { id_post: context.objectId }})
 	const user_check = await prisma.user.findFirst({ where: { idvk: context.fromId } })
 	if (user_check && post_check) {
@@ -156,7 +156,7 @@ vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
             messa += `\n\n☠ В статистие участвует ${counter_last-1} игроков`
 			const boss = await prisma.boss.update({ where: { id: post_check.id }, data: { hp: { decrement: dmg }, artefact: { decrement: artefact_drop }, stat: JSON.stringify(stata) } })
 			await prisma.planet.updateMany({ where: { id_user: user_check.id }, data: { artefact: { increment: artefact_drop } } })
-			await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔔 Вы нанесли ${dmg.toFixed(2)}💥 урона боссу, у него осталось ${boss.hp.toFixed(2)}❤. ${artefact_drop > 0 ? `Выпало ${artefact_drop}${icotransl_list['artefact'].smile}` : ''}`})
+			await vk.api.wall.createComment({owner_id: context.ownerId, post_id: context.objectId, reply_to_comment: context.id, guid: context.text, message: `🔔 Вы нанесли ${dmg.toFixed(2)}💥 урона боссу, у него осталось ${boss.hp.toFixed(2)}❤. ${artefact_drop > 0 ? `Выпало ${artefact_drop.toFixed(2)}${icotransl_list['artefact'].smile}` : ''}`})
 			if ((Number(datenow)-Number(post_check.update)) > 1000000) {
 				await vk_user.api.wall.edit({ owner_id: -group_id, post_id: post_check.id_post, message: `☠ Босс: ${boss.name}\n❤ Здоровье: ${boss.hp.toFixed(2)}\n🏆 Дроп: ${boss.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${boss.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n💬 Описание: ${boss.description}\n\n📊 Статистика:\n${messa}` })
 				await prisma.boss.update({ where: { id: post_check.id }, data: { update: new Date(datenow) } })
@@ -176,7 +176,7 @@ vk.updates.on('wall_reply_new', async (context: Context, next: any) => {
 				for (const stat of stata) {
 					const user_get = await prisma.user.findFirst({ where: { idvk: stat.idvk } })
 					const user_up = await prisma.user.update({ where: { id: user_get!.id}, data: { crystal: { increment: Math.floor(stat.atk/reward_koef)}}})
-					await Send_Message(stat.idvk, `За победу над ${post_check.name} вы получаете ${Math.floor(stat.atk/reward_koef)}${icotransl_list['crystal']} заняв ${rang} место из ${stata.length}. Баланс: ${user_get?.crystal} --> ${user_up.crystal}`)
+					await Send_Message(stat.idvk, `За победу над ${post_check.name} вы получаете ${Math.floor(stat.atk/reward_koef)}${icotransl_list['crystal'].smile} заняв ${rang} место из ${stata.length}. Баланс: ${user_get?.crystal} --> ${user_up.crystal}`)
 					rang++
 				}
 				await vk_user.api.wall.edit({ owner_id: -group_id, post_id: post_check.id_post, message: `☠ Босс: ${post_check.name}\n❤ Здоровье: ${post_check.hp.toFixed(2)}\n🏆 Дроп: ${post_check.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${post_check.crystal.toFixed(2)}${icotransl_list['crystal'].smile}\n💬 Описание: ${post_check.description}\n\n📊 Статистика: БОСС ПОВЕРЖЕН!` })
@@ -211,11 +211,13 @@ vk.updates.on('message_event', async (context: Context, next: any) => {
 		"main_menu_close": Main_Menu_Close,
 		"main_menu_corporation": Main_Menu_Corporation,
 		"builder_control": Builder_Control,
+		"builder_control_multi": Builder_Control_Multi,
 		"builder_controller": Builder_Controller,
 		"corporation_controller": Corporation_Controller,
 		"builder_control_corporation": Builder_Control_Corporation,
 		"builder_controller_corporation": Builder_Controller_Corporation,
 		"planet_control": Planet_Control,
+		"planet_control_multi": Planet_Control_Multi,
 		"planet_controller": Planet_Controller,
 		"member_control": Member_Control,
 		"member_controller": Member_Controller,

@@ -5,6 +5,59 @@ import { Printer_Builder_Config, builder_config, builder_config_list } from "../
 import { vk } from "../../../index"
 import { icotransl_list } from "../datacenter/resources_translator"
 import { Time_Controller } from "./service3"
+import { Fixed_Number_To_Five } from "../service"
+
+export async function Builder_Control_Multi(context: Context, user: User) {
+    const keyboard = new KeyboardBuilder()
+    let id_builder_sent = await Fixed_Number_To_Five(context.eventPayload.id_builder_sent ?? 0)
+    let id_planet = context.eventPayload.id_planet ?? 0
+    let event_logger = `❄ Отдел управления сооружениями на планете ${id_planet}:\n\n`
+    const builder_list_get: Builder[] = await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet }, orderBy: { crdate: "asc" } })
+    const builder_list: Builder[] = []
+    for (const buil of builder_list_get) {
+        const research: Research | null | { lvl: number } = await prisma.research.findFirst({ where: { id_user: user.id, name: buil.name } }) ?? { lvl: 10 }
+        if (research.lvl > buil.lvl) {
+            builder_list.unshift(buil)
+        } else {
+            builder_list.push(buil)
+        }
+    }
+    if (builder_list.length > 0) {
+        const limiter = 5
+        let counter = 0
+        
+        for (let i=id_builder_sent; i < builder_list.length && counter < limiter; i++) {
+            const builder = builder_list[i]
+            
+            keyboard.callbackButton({ label: `👀 ${builder.name}-${builder.id}`, payload: { command: 'builder_control', id_builder_sent: i, id_planet: id_planet, }, color: 'secondary' }).row()
+            //.callbackButton({ label: '👀', payload: { command: 'builder_controller', command_sub: 'builder_open', office_current: i, target: builder.id }, color: 'secondary' })
+            const research: Research | null = await prisma.research.findFirst({ where: { id_user: user.id, name: builder.name } })
+            event_logger += `\n\n💬 ${builder.name}-${builder.id}\n📝 Уровень: ${builder.lvl}/${research?.lvl || 10 }`
+            /*
+            const services_ans = await Builder_Lifer(user, builder, id_planet)*/
+            counter++
+        }
+        const services_ans = await Time_Controller(context, user, id_planet)
+        event_logger += `\n${services_ans}`
+        const plancant = await prisma.planet.findFirst({ where: { id: id_planet }, select: { build: true } })
+        event_logger += `\n\n${builder_list.length > 1 ? `~~~~ ${builder_list.length > limiter ? id_builder_sent+limiter : limiter-(builder_list.length-id_builder_sent)} из ${builder_list.length} (макс ${plancant?.build}) ~~~~` : ''}`
+        //предыдущий офис
+        if (builder_list.length > limiter && id_builder_sent > limiter-1 ) {
+            keyboard.callbackButton({ label: '←', payload: { command: 'builder_control_multi', id_builder_sent: id_builder_sent-limiter, id_planet: id_planet }, color: 'secondary' })
+        }
+        //следующий офис
+        if (builder_list.length > limiter && id_builder_sent < builder_list.length-limiter) {
+            keyboard.callbackButton({ label: '→', payload: { command: 'builder_control_multi', id_builder_sent: id_builder_sent+limiter, id_planet: id_planet }, color: 'secondary' })
+        }
+    } else {
+        event_logger = `💬 Вы еще не построили здания, как насчет что-то построить??`
+    }
+    //новый офис
+    keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' })
+    //назад хз куда
+    keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control_multi' }, color: 'secondary' }).inline().oneTime() 
+    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+}
 
 export async function Builder_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
@@ -60,7 +113,7 @@ export async function Builder_Control(context: Context, user: User) {
     //новый офис
     keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' })
     //назад хз куда
-    keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control' }, color: 'secondary' }).inline().oneTime() 
+    keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control_multi', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
     await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
