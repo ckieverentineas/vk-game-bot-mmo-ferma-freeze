@@ -22,7 +22,7 @@ git clone https://github.com/ckieverentineas/vk-chat-bot-game-edition.git
 ```js
 DATABASE_URL = "file:./dev.db?socket_timeout=600&connection_limit=1"
 token = "ВАШ ТОКЕН" #ВАШ ТОКЕН БОТА ГРУППЫ
-token_user #ТОКЕН СТРАНИЦЫ ЛИЧНОЙ АДМИНА ДЛЯ ГЕНЕРАЦИИ ПОСТОВ В ГРУППЕ С БОССАМИ
+token_user = 000000000 #ТОКЕН СТРАНИЦЫ ЛИЧНОЙ АДМИНА ДЛЯ ГЕНЕРАЦИИ ПОСТОВ В ГРУППЕ С БОССАМИ
 root = 000000000 #ВАШ ИДВК ЛИЧНОЙ СТРАНИЦЫ АДМИНА
 chat_id = 2000000001 #идентификатор чата для логов событий
 group_id = 000000000 #идвк группы бота
