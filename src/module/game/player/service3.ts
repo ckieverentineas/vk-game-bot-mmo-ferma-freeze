@@ -1,7 +1,7 @@
 import { User, Builder, Planet, Corporation, Corporation_Builder } from "@prisma/client"
 import { Context } from "vk-io"
 import prisma from "../../prisma";
-import { Storages, builder_config } from "../datacenter/builder_config";
+import { Builder_Config_Select, Storages, builder_config } from "../datacenter/builder_config";
 import Generator_Nickname from "../../../module/fab/generator_name";
 import { Randomizer_Float } from "../service";
 import { icotransl_list } from "../datacenter/resources_translator";
@@ -75,6 +75,17 @@ export async function Builder_Lifer(user: User, builder: Builder, id_planet: num
     return calc
 }
 
+async function Input_Universal_Calculation(planet: Planet, datenow: Date, dateold: Date, global_koef: number) {
+    return async function (storage: Builder, builder: Builder) {
+        return async function (storage_base: Storages, builse: Builder_Config_Select) {
+            return async function (name: string) {
+                const coal_income_will = ((Reflect.get(builse.input!, name).income*((builder.lvl)**Reflect.get(builse.input!, name).koef))*(Number(datenow)-Number(dateold))/Reflect.get(builse.input!, name).time) * global_koef
+                const coal_profit = Reflect.get(storage_base, name).count+coal_income_will  <= (Reflect.get(storage_base, name).limit*((storage.lvl)**Reflect.get(storage_base, name).koef_limit)) && planet.coal  >= coal_income_will ? coal_income_will : 0
+                console.log(`\n\n\n\n\n\n\n\n ${name} --> ${coal_income_will} --> ${coal_profit}`)
+            }
+        }
+    }
+}
 async function Mine_Controller(user: User, builder: Builder, id_planet: number, analitica: Analitica): Promise<{ message: string, analitica: Analitica }> {
     let event_logger = ''
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
@@ -92,6 +103,8 @@ async function Mine_Controller(user: User, builder: Builder, id_planet: number, 
         event_logger += `🔕 Для работы ${builder.name}-${builder.id} нужно больше рабочих\n`;
     }
     // просчитываем доход за прошедшее время
+    console.log(`\n\n\n\n\nsrgoisarjoirasjasihor\n`)
+    await (await (await (await Input_Universal_Calculation(planet, datenow, dateold, global_koef))(storage, builder))(storage_base, builse))('coal')
     const coal_income_will = ((builse.input!.coal.income*((builder.lvl)**builse.input!.coal.koef))*(Number(datenow)-Number(dateold))/builse.input!.coal.time) * global_koef
     const golden_income_will = ((builse.input!.golden.income*((builder.lvl)**builse.input!.golden.koef))*(Number(datenow)-Number(dateold))/builse.input!.golden.time) * global_koef
     const iron_income_will = ((builse.input!.iron.income*((builder.lvl)**builse.input!.iron.koef))*(Number(datenow)-Number(dateold))/builse.input!.iron.time) * global_koef

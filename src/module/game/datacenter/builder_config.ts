@@ -66,6 +66,16 @@ export interface Builder_Config_Init {
         require: { [key: string]: { name: string, limit: number, koef: number } },
     }
 }
+export interface Builder_Config_Select {
+    id: number,
+    name: string,
+    description: string,
+    cost: { [key: string]: { name: string, price: number, koef: number } },
+    input?: { [key: string]: { name: string, income: number, koef: number, time: number } },
+    storage?: { [key: string]: { name: string, count: number, limit: number, koef_limit: number } },
+    output?: { [key: string]: { name: string, outcome: number, koef: number, time: number } },
+    require: { [key: string]: { name: string, limit: number, koef: number } },
+}
 export interface Storages {
     [key: string]: {
         name: string, 
