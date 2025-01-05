@@ -1,11 +1,11 @@
 import { User, Planet, System, Builder } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
-import { vk } from "../../..";
 import prisma from "../../prisma";
 import { Fixed_Number_To_Five, Randomizer_Float } from "../service";
 import { Time_Controller } from "../player/service3";
 import { icotransl_list } from "../datacenter/resources_translator";
 import { builder_config, builder_config_list } from "../datacenter/builder_config";
+import { Send_Message_Universal } from "../../../module/fab/helper";
 
 const buildin: { [key: string]: { price: number, koef_price: number, description: string } } = {
     "Планета": { price: 100000, koef_price: 3, description: "Планета - место, где вы будете развивать свой бизнес и истощать ресурсы" },
@@ -71,7 +71,8 @@ export async function Planet_Control_Multi(context: Context, user: User) {
     keyboard.callbackButton({ label: `➕`, payload: { command: 'planet_controller', command_sub: 'planet_add', current_object: cur }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Planet_Control(context: Context, user: User) {
@@ -142,7 +143,8 @@ export async function Planet_Control(context: Context, user: User) {
     //keyboard.callbackButton({ label: `➕`, payload: { command: 'planet_controller', command_sub: 'planet_add' }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control_multi', current_object: cur }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Planet_Controller(context: Context, user: User) {
@@ -169,7 +171,8 @@ async function Planet_Info(context: Context, user: User, ) {
         event_logger += `💬 ${name}: ${counter}\n`
     }
     keyboard.callbackButton({ label: `❌`, payload: { command: 'planet_control', current_object: cur }, color: 'secondary' }).row().inline().oneTime()
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 async function Planet_Usual(user: User, target: string) {
     const systema: System | null = await prisma.system.findFirst({ where: { id: 1 } })
@@ -269,7 +272,8 @@ async function Planet_Add(context: Context, user: User, ) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control', current_object: 0 }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Planet_Destroy(context: Context, user: User, target?: number) {
@@ -295,5 +299,6 @@ async function Planet_Destroy(context: Context, user: User, target?: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control' }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }

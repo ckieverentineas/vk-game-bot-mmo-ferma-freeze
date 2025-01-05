@@ -2,7 +2,7 @@ import { User, Builder, Corporation } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
-import { Send_Message } from "../../../module/fab/helper";
+import { Send_Message, Send_Message_Universal } from "../../../module/fab/helper";
 
 const buildin: { [key: string]: { price: number, income: number, cost: number, koef_price: number, koef_income: number, type: string, smile: string, description: string } } = {
     "Офис": { price: 100, income: 5, cost: 100, koef_price: 1.3838, koef_income: 1.5, type: 'gold', smile: '💰', description: "Офис является штабом вашего бизнеса и фискирует прибыль в шекелях" },
@@ -22,11 +22,12 @@ export async function Main_Menu_Corporation(context: Context, user: User) {
     } else {
         keyboard//.callbackButton({ label: '➕ Основать корпорацию', payload: { command: 'corporation_controller', command_sub: 'corporation_add' }, color: 'secondary' }).row()
         .callbackButton({ label: '🔎 Быстрый поиск', payload: { command: 'corporation_controller', command_sub: 'corporation_finder' }, color: 'secondary' })
-        event_logger = `💬 Вы еще не состоите в корпорации, как насчет основать свою или присоединится к существующей!\nЕсли хотите основать собственную, напишите основать корпорацию [название корпорации]`
+        event_logger = `💬 Вы еще не состоите в корпорации, как насчет основать свою или присоединится к существующей!\nЕсли хотите основать собственную, напишите !основать корпорацию [название корпорации]`
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Corporation_Controller(context: Context, user: User) {
@@ -109,7 +110,8 @@ async function Corporation_Finder(context: Context, user: User, target: number) 
         }   
     }
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu_corporation', office_current: curva, target_current: cur, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Builder_Destroy(context: Context, user: User, target: number) {
@@ -139,7 +141,8 @@ async function Builder_Destroy(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Office_Config(context: Context, user: User, target: number) {
@@ -150,7 +153,8 @@ async function Office_Config(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'office', office_current: context.eventPayload.office_current, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Office_Open(context: Context, user: User, target: number) {
@@ -161,5 +165,6 @@ async function Office_Open(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'office', office_current: context.eventPayload.office_current, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }

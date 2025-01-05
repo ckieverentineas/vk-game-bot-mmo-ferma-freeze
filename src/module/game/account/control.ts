@@ -1,9 +1,9 @@
 import { Builder, Corporation, User } from "@prisma/client";
-import { vk } from "../../../";
 import { Context, KeyboardBuilder } from "vk-io";
 import prisma from "../../prisma";
 import { icotransl_list } from "../datacenter/resources_translator";
 import { builder_config } from "../datacenter/builder_config";
+import { Send_Message_Universal } from "../../../module/fab/helper";
 
 async function User_Info(user: User) {
 	const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
@@ -28,7 +28,7 @@ async function User_Info(user: User) {
 	keyboard.callbackButton({ label: '🌎 Планеты', payload: { command: 'planet_control_multi' }, color: 'secondary' }).row()
 	.callbackButton({ label: '🌐 Корпорация', payload: { command: 'main_menu_corporation' }, color: 'secondary' }).row()
 	.callbackButton({ label: '🧪 Исследования', payload: { command: 'research_control' }, color: 'secondary' }).row()
-	.urlButton({ label: '🍻 Об игре', url: 'https://vk.com/@ferma_bot1-dobro-pozhalovat-v-mmo-ekonomicheskuu-biznes-strategiu' }).row()
+	.urlButton({ label: '🍻 Об игре', url: 'https://vk.com/@capital_galaxy-dobro-pozhalovat-v-mnogopolzovatelskuu-onlain-igru-s-ekonomi' }).row()
 	//.callbackButton({ label: '📈 Прибыль', payload: { command: 'income_control', stat: "health"  }, color: 'secondary' })
 	//.callbackButton({ label: '💰>⚡Биржа', payload: { command: 'exchange_control', stat: "health"  }, color: 'secondary' }).row()
 	.callbackButton({ label: '❌', payload: { command: 'main_menu_close' }, color: 'secondary' }).inline().oneTime() 
@@ -36,7 +36,8 @@ async function User_Info(user: User) {
 }
 export async function User_Menu_Show(context: Context, user: User) {
 	const [keyboard, event_logger] = await User_Info(user)
-	await context.send(`${event_logger}`, { keyboard: keyboard } );
+	if (!keyboard || typeof keyboard === 'string') { return }
+	await Send_Message_Universal(context.senderId, `${event_logger}`, keyboard)
 	/*await context.send(`⌛ Погода сегодня солнечная, но вы теперь не на заводе, владете заводом.`,
 		{ 	
 			keyboard: Keyboard.builder()
@@ -47,10 +48,13 @@ export async function User_Menu_Show(context: Context, user: User) {
 
 export async function Main_Menu(context: Context, user: User) {
 	const [keyboard, event_logger] = await User_Info(user)
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+	if (!keyboard || typeof keyboard === 'string') { return }
+	await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 export async function Main_Menu_Close(context: Context, user: User) {
 	const keyboard = new KeyboardBuilder()
 	keyboard.textButton({ label: 'КЛАВА', payload: { command: 'planet_control', stat: "health"  }, color: 'secondary' }).row().inline().oneTime() 
-	await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `❄ Сессия успешно завершена, ${user.name}, чтобы начать новую, напишите [клава] без квадратных скобочек`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+	await Send_Message_Universal(context.peerId, `❄ Сессия успешно завершена, ${user.name}, чтобы начать новую, напишите [клава] без квадратных скобочек`, keyboard)
+	//await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `❄ Сессия успешно завершена, ${user.name}, чтобы начать новую, напишите [клава] без квадратных скобочек`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }

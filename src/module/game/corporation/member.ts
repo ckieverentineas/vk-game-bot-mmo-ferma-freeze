@@ -2,6 +2,7 @@ import { User } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
 import { vk } from "../../..";
 import prisma from "../../prisma";
+import { Send_Message_Universal } from "../../../module/fab/helper";
 
 export async function Member_Control(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
@@ -33,7 +34,8 @@ export async function Member_Control(context: Context, user: User) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu_corporation' }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Member_Controller(context: Context, user: User) {
@@ -72,5 +74,6 @@ async function Member_Destroy(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }

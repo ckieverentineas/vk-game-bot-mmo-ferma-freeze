@@ -13,17 +13,17 @@ import { Randomizer_Float } from "./module/game/service";
 
 
 export function registerUserRoutes(hearManager: HearManager<IQuestionMessageContext>): void {
-    hearManager.hear(/енотик/, async (context: any) => {
+    hearManager.hear(/!енотик/, async (context: any) => {
         if (context.senderId == root[0]) {
-            await context.sendDocuments({ value: `./prisma/dev.db`, filename: `dev.db` }, { message: '💡 Открывать на сайте: https://sqliteonline.com/' } );
+            await context.sendDocuments({ value: `./prisma/capital_galactic.db`, filename: `capital_galactic.db` }, { message: '💡 Открывать на сайте: https://sqliteonline.com/' } );
             await vk.api.messages.send({
                 peer_id: Number(root[0]),
                 random_id: 0,
-                message: `‼ @id${context.senderId}(Admin) делает бекап баз данных dev.db.`
+                message: `‼ @id${context.senderId}(Admin) делает бекап баз данных capital_galactic.db.`
             })
         }
     })
-    hearManager.hear(/стата|Стата/gm, async (context: any) => {
+    hearManager.hear(/!стата|!Стата/gm, async (context: any) => {
         let stop = false
         while (!stop) {
             const answer: any = await context.question(`❄ Какая статистика вам нужна? Клавиатура доступна в течение пяти минут!`,
@@ -371,7 +371,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         //console.log(res.map((item: { test: any; }) => {return item.test;}).join("\r\n"))*/
         
     })
-    hearManager.hear(/осмотреть|Осмотреть/gm, async (context: any) => {
+    hearManager.hear(/!осмотреть|!Осмотреть/gm, async (context: any) => {
         if (context.forwards[0]?.senderId || context.replyMessage?.senderId) {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
             const user = await prisma.user.findFirst({ where: { idvk: target } })
@@ -385,8 +385,8 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
         }
         //console.log(context.forwards[0].senderId)
     })
-    hearManager.hear(/помощь|Помощь/gm, async (context: any) => {
-        await context.send(`💬 в данный момент доступны команды:\n~ [осмотреть] -> пишется при пересыле на сообщение пользователя и позволяет через промышленный шпионаж узнать информацию о конкуренте\n~ [передать х шекелей] -> команда для беседы, пишется при пересыле на сообщение пользователя и позволяет передавать другому игроку шекели, где х - количество шекелей, что спишутся с вашего счета\n~ [стата] -> показывает топ-10 игроков в топе по добыче энергии`)
+    hearManager.hear(/!помощь|!Помощь/gm, async (context: any) => {
+        await context.send(`💬 в данный момент доступны команды:\n~ [!осмотреть] -> пишется при пересыле на сообщение пользователя и позволяет через промышленный шпионаж узнать информацию о конкуренте\n~ [!передать х шекелей] -> команда для беседы, пишется при пересыле на сообщение пользователя и позволяет передавать другому игроку шекели, где х - количество шекелей, что спишутся с вашего счета\n~ [!стата] -> показывает топ-10 игроков в топе по добыче энергии\n~ [!основать корпорацию НАЗВАНИЕ] -> пишете !основать корпорацию и название ее следом\n~ [!вступить] -> пишется при пересыле на сообщение пользователя и позволяет вступить в корпорацию данного пользователя`)
         //console.log(context.forwards[0].senderId)
     })
     hearManager.hear(/!cmd/gm, async (context: any) => {
@@ -524,7 +524,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             await context.send(`Сейчас построек на сервере ${countbul2}, миграция успешно завершена`)
         }
     })
-    hearManager.hear(/передать|Передать/gm, async (context: any) => {
+    hearManager.hear(/!передать|!Передать/gm, async (context: any) => {
         if ((context.forwards[0]?.senderId || context.replyMessage?.senderId) && context.text.split(' ').length == 3 && context.peerType == 'chat') {
             const target = context.forwards[0]?.senderId || context.replyMessage?.senderId
             if (!target) { return }
@@ -581,7 +581,7 @@ export function registerUserRoutes(hearManager: HearManager<IQuestionMessageCont
             }
         }
     })
-    hearManager.hear(/основать корпорацию/gm, async (context: any) => {
+    hearManager.hear(/!основать корпорацию/gm, async (context: any) => {
         const user: User | null = await prisma.user.findFirst({ where: { idvk: context.senderId } })
         if (user) {
             const corporation_check: Corporation | null = await prisma.corporation.findFirst({ where: { id: Number(user.id_corporation) } })

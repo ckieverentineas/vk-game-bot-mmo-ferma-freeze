@@ -40,6 +40,7 @@ vk.updates.on('message_new', hearManager.middleware);
 registerUserRoutes(hearManager)
 
 vk.updates.on('message_new', async (context: Context, next: any) => {
+	//console.log(context)
     console.log(`User:${context.senderId} sent ${context.text} from ${context.peerType}`)
 	if (context.peerType == 'chat') { 
 		return await next();

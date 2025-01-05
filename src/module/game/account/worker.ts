@@ -1,10 +1,9 @@
 import { Builder, User, Worker } from "@prisma/client"
 import { Context, KeyboardBuilder } from "vk-io"
-import { vk } from "../../..";
 import prisma from "../../prisma";
 import Generator_Nickname from "../../fab/generator_name";
 import { Rand_Int } from "../../fab/random";
-import { Send_Message } from "../../../module/fab/helper";
+import { Send_Message, Send_Message_Universal } from "../../../module/fab/helper";
 
 function Finder_Builder(builder_list: Builder[], worker: Worker) {
     for (let i=0; i < builder_list.length; i++) {
@@ -56,7 +55,8 @@ export async function Worker_Control(context: Context, user: User) {
     keyboard.callbackButton({ label: `➕${prices}💰`, payload: { command: 'worker_controller', command_sub: 'worker_add' }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'main_menu' }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Worker_Controller(context: Context, user: User) {
@@ -143,7 +143,8 @@ async function Worker_Target(context: Context, user: User, target: number) {
     }
 
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: curva, target_current: cur, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Worker_Add(context: Context, user: User, target: number) {
@@ -170,7 +171,8 @@ async function Worker_Add(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Worker_Upgrade(context: Context, user: User, target: number) {
@@ -200,7 +202,8 @@ async function Worker_Upgrade(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: cur, target: undefined }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Worker_Destroy(context: Context, user: User, target: number) {
@@ -229,7 +232,8 @@ async function Worker_Destroy(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Worker_Config(context: Context, user: User) {
@@ -264,7 +268,8 @@ async function Worker_Config(context: Context, user: User) {
     await Send_Message(user.idvk, `⚙ Назначено рабочих на места работы: ${counter_builder_fixed}`)
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'worker_control', office_current: 0, target: undefined }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `Поиск безработных и назначение на работы автоматически успешно завершено!`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `Поиск безработных и назначение на работы автоматически успешно завершено!`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `Поиск безработных и назначение на работы автоматически успешно завершено!`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Worker_Open(context: Context, user: User, target: number) {
@@ -275,5 +280,6 @@ async function Worker_Open(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'office', office_current: context.eventPayload.office_current, target: target }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }

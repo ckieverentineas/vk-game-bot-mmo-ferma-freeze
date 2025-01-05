@@ -2,10 +2,10 @@ import { Builder, Research, User } from "@prisma/client"
 import prisma from "../../../module/prisma"
 import { Context, KeyboardBuilder } from "vk-io"
 import { Printer_Builder_Config, builder_config, builder_config_list } from "../datacenter/builder_config"
-import { vk } from "../../../index"
 import { icotransl_list } from "../datacenter/resources_translator"
 import { Time_Controller } from "./service3"
 import { Fixed_Number_To_Five } from "../service"
+import { Send_Message_Universal } from "../../../module/fab/helper"
 
 export async function Builder_Control_Multi(context: Context, user: User) {
     const keyboard = new KeyboardBuilder()
@@ -56,7 +56,8 @@ export async function Builder_Control_Multi(context: Context, user: User) {
     keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'planet_control_multi' }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Builder_Control(context: Context, user: User) {
@@ -114,7 +115,8 @@ export async function Builder_Control(context: Context, user: User) {
     keyboard.callbackButton({ label: '➕', payload: { command: 'builder_controller', command_sub: 'builder_add', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' })
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control_multi', id_builder_sent: id_builder_sent, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 export async function Builder_Controller(context: Context, user: User) {
@@ -206,7 +208,8 @@ async function Builder_Add(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, id_builder_sent: id_builder_sent, target: target, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Builder_Checker_Upgrade(user: User, id_builder: number, lvl_need: number ) {
@@ -342,7 +345,8 @@ async function Builder_Upgrade(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: cur, target: undefined, id_planet: id_planet, id_builder_sent: id_builder_sent }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
 
 async function Builder_Destroy(context: Context, user: User, target: number) {
@@ -372,5 +376,6 @@ async function Builder_Destroy(context: Context, user: User, target: number) {
     }
     //назад хз куда
     keyboard.callbackButton({ label: '❌', payload: { command: 'builder_control', office_current: 0, id_builder_sent, target: undefined, id_planet: id_planet }, color: 'secondary' }).inline().oneTime() 
-    await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
+    await Send_Message_Universal(context.peerId, `${event_logger}`, keyboard)
+    //await vk.api.messages.edit({peer_id: context.peerId, conversation_message_id: context.conversationMessageId, message: `${event_logger}`, keyboard: keyboard/*, attachment: attached.toString()*/ })
 }
