@@ -18,14 +18,17 @@ export async function Time_Controller(context: Context, user: User, id_planet: n
     }
     const storage: Builder | null = await prisma.builder.findFirst({ where: { id_user: user.id, id_planet: id_planet, name: 'Склад' } })
     if (!storage) { calc += `🔔🔕 Для работы планеты-${id_planet} нужно построить склад\n`; }
-    let analitica = { res: { coal: 0, gas: 0, oil: 0, uranium: 0, iron: 0, golden: 0, artefact: 0, crystal_dirt: 0 }, mat: { gold: 0, metal: 0, energy: 0, crystal: 0, research: 0 } }
+    let analitica = { res: { coal: 0, gas: 0, oil: 0, uranium: 0, iron: 0, golden: 0, artefact: 0, crystal_dirt: 0 }, mat: { gold: 0, metal: 0, energy: 0, crystal: 0, research: 0, gold_alliance: 0, gold_bonus: 0 } }
     for (const builder of await prisma.builder.findMany({ where: { id_user: user.id, id_planet: id_planet } })) {
         const result = await Builder_Lifer(user, builder, id_planet, analitica);
         calc += result.message
         analitica = result.analitica
     } 
+    const corp: Corporation | null = await prisma.corporation.findFirst({ where: { id: user.id_corporation } })
     calc += `\n\n⚙ Ресурсы:\n${analitica.res.coal.toFixed(2)}${icotransl_list['coal'].smile} ${analitica.res.golden.toFixed(2)}${icotransl_list['golden'].smile}\n${analitica.res.iron.toFixed(2)}${icotransl_list['iron'].smile} ${analitica.res.crystal_dirt.toFixed(2)}${icotransl_list['crystal_dirt'].smile}\n${analitica.res.artefact.toFixed(2)}${icotransl_list['artefact'].smile} ${analitica.res.gas.toFixed(2)}${icotransl_list['gas'].smile}\n${analitica.res.oil.toFixed(2)}${icotransl_list['oil'].smile} ${analitica.res.uranium.toFixed(2)}${icotransl_list['uranium'].smile}`
     calc += `\n\n⚙ Материалы:\n${analitica.mat.energy.toFixed(2)}${icotransl_list['energy'].smile} ${analitica.mat.metal.toFixed(2)}${icotransl_list['metal'].smile} ${analitica.mat.gold.toFixed(2)}${icotransl_list['gold'].smile}\n${analitica.mat.research.toFixed(2)}${icotransl_list['research'].smile} ${analitica.mat.crystal.toFixed(2)}${icotransl_list['crystal'].smile}`
+    calc += analitica.mat.gold_alliance > 0 ? `\n\n🌐 ${corp?.name} получает от ваших Центробанков: +${analitica.mat.gold_alliance.toFixed(2)}${icotransl_list['gold'].smile}` : ''
+    calc += analitica.mat.gold_bonus> 0 ? `\n\n🌐 ${corp?.name} перечисляет в ваш Центробанк откаты: +${analitica.mat.gold_bonus.toFixed(2)}${icotransl_list['gold'].smile}` : ''
     return calc
 }
 type Builder_Selector = {
@@ -47,7 +50,9 @@ interface Analitica {
         metal: number, 
         energy: number, 
         crystal: number, 
-        research: number 
+        research: number,
+        gold_alliance: number,
+        gold_bonus: number
     }
 }
 export async function Builder_Lifer(user: User, builder: Builder, id_planet: number, analitica: Analitica ): Promise<{ message: string, analitica: Analitica }> {
@@ -305,9 +310,8 @@ async function Central_Bank_Controller(user: User, builder: Builder, id_planet: 
         prisma.corporation.update({ where: { id: user.id_corporation }, data: { gold: { increment: gold_bonus_corp }}})
     ]).then(([]) => {
         console.log(`Работа коропрации с бафами ${builder.name}-${builder.id} успешно`)
-        event_logger += gold_bonus_corp > 0 ? `\n🌐 ${corp.name} получает от ${builder.name}-${builder.id}: +${gold_bonus_corp.toFixed(2)}${icotransl_list['gold'].smile}` : ''
-        event_logger += gold_bonus_user > 0 ? `\n🌐 ${corp.name} перечисляет в ${builder.name}-${builder.id}: +${gold_bonus_user.toFixed(2)}${icotransl_list['gold'].smile}` : ''
-        analitica.mat.gold += gold_bonus_user
+        analitica.mat.gold_alliance += gold_bonus_corp
+        analitica.mat.gold_bonus += gold_bonus_user
     })
     .catch((error) => {
         console.error(`Ошибка при работе с корпорацией в ${builder.name}-${builder.id}: ${error.message}`);
